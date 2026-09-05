@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  
+  
+  
+  <entry>
+    <title>How to create a Blog</title>
+    <link href="/2026/09/05/Blog%E6%90%AD%E5%BB%BA%E6%8C%87%E5%8D%97/"/>
+    <url>/2026/09/05/Blog%E6%90%AD%E5%BB%BA%E6%8C%87%E5%8D%97/</url>
+    
+    <content type="html"><![CDATA[<h2 id="1：一切的开始">1：一切的开始</h2><p>你只需要<strong>一台电脑（本文基于Windows系统撰写）</strong>，<strong>一个邮箱（注册Github账号）/一个Github账号</strong>.<br>下载并安装<a href="https://git-scm.com/">Git</a>，<a href="https://nodejs.org/">Node.js</a>.</p><h2 id="2：创建Github-Repository">2：创建Github Repository</h2><p>在Github中创建一个Public Repository，名称是<code>你的Github用户名.github.io</code>.<br>打开这个Repository，创建一个index.html并随便<strong>写些东西</strong>.</p>]]></content>
+    
+    
+    
+  </entry>
+  
+  
+  
+  
+  
+  
+  <entry>
+    <title>标题</title>
+    <link href="/"/>
+    <url>/</url>
+    
+    <content type="html"><![CDATA[<p><strong>这个人很懒，什么也没有留下~</strong></p>]]></content>
+    
+  </entry>
+  
+  
+  
+</search>
