@@ -5,10 +5,10 @@
   
   <entry>
     <title>How to create a Blog(施工中)</title>
-    <link href="/2026/09/05/Blog%E6%90%AD%E5%BB%BA%E6%8C%87%E5%8D%97/"/>
-    <url>/2026/09/05/Blog%E6%90%AD%E5%BB%BA%E6%8C%87%E5%8D%97/</url>
+    <link href="/2026/09/08/Blog%E6%90%AD%E5%BB%BA%E6%8C%87%E5%8D%97/"/>
+    <url>/2026/09/08/Blog%E6%90%AD%E5%BB%BA%E6%8C%87%E5%8D%97/</url>
     
-    <content type="html"><![CDATA[<h2 id="1：一切的开始">1：一切的开始</h2><p>你只需要<strong>一台电脑（本文基于Windows系统撰写）</strong>，<strong>一个邮箱（注册Github账号）/一个Github账号</strong>.<br>下载并安装<a href="https://git-scm.com/">Git</a>，<a href="https://nodejs.org/">Node.js</a>.</p><h2 id="2：创建Github-Repository">2：创建Github Repository</h2><p>在Github中创建一个Public Repository，名称是<code>你的Github用户名.github.io</code>.<br>打开这个Repository，创建一个index.html并随便<strong>写些东西</strong>.</p>]]></content>
+    <content type="html"><![CDATA[<h2 id="1：一切的开始">1：一切的开始</h2><p>你只需要<strong>一台电脑（本文基于Windows系统撰写）</strong>，<strong>一个邮箱（注册Github账号）/一个Github账号</strong>.<br>下载并安装<a href="https://git-scm.com/">Git</a>，<a href="https://nodejs.org/">Node.js</a>.</p><h2 id="2：创建Github-Repository">2：创建Github Repository</h2><p>在Github中创建一个Public Repository，名称是<code>你的Github用户名.github.io</code>.<br>打开这个Repository，创建一个index.html <strong>并写些东西（这很重要）</strong>.</p>]]></content>
     
     
     
