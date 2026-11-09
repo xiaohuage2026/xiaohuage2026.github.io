@@ -13,12 +13,15 @@ navbar:
   menu:
     - { key: "home", link: "/", icon: "iconfont icon-home-fill" }
     - { key: "archive", link: "/archives/", icon: "iconfont icon-archive-fill" }
-    - { key: "category", link: "/categories/", icon: "iconfont icon-category-fill" }
-    - { key: "tag", link: "/tags/", icon: "iconfont icon-tags-fill" }
-    - { key: "links", link: "/links/", icon: "iconfont icon-link-fill" }
-    - { key: "editor", link: "/editor/", name: "编辑器" }
-    - { key: "admin", link: "/admin/", name: "管理" }
     - { key: "about", link: "/about/", icon: "iconfont icon-user-fill" }
+    - key: more
+      name: 更多
+      submenu:
+        - { key: "category", link: "/categories/", icon: "iconfont icon-category-fill" }
+        - { key: "tag", link: "/tags/", icon: "iconfont icon-tags-fill" }
+        - { key: "links", link: "/links/", icon: "iconfont icon-link-fill" }
+        - { key: "editor", link: "/editor/", name: "编辑器" }
+        - { key: "admin", link: "/admin/", name: "管理" }
 
 # 搜索（基于 hexo-generator-searchdb，已在 _config.yml 中配置索引文件）
 search:
@@ -120,6 +123,8 @@ about:
 # 自定义 JS/CSS（相对 source/ 目录）
 custom_css:
   - /css/custom.css
+custom_js:
+  - /js/custom.js
 
 # 数学公式与流程图改走本地静态资源（避免 CDN 不可用导致公式/图表错乱）
 static_prefix:

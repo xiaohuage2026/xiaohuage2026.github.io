@@ -63,11 +63,13 @@ blog/
    点击直达 GitHub 网页编辑器修改该文章 Markdown 源码，提交后重新构建即可更新站点。
    按钮链接中的 `GITHUB_REPO` / `GITHUB_BRANCH` / `SOURCE_PREFIX` 在 `scripts/online-edit.js` 顶部配置。
 
-3. **管理员界面**（`/admin/`，导航栏「管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 删除
+3. **管理员界面**（`/admin/`，导航栏「更多 → 管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 删除
    `blog/source/_posts/` 下的文章。**只有对仓库有写权限的 GitHub 账户（管理员 / 协作者）的令牌才能保存内容**；
    其他访客没有令牌，任何修改请求都会被 GitHub 拒绝。
    - 令牌建议使用 Fine-grained PAT，仅勾选本仓库的 `Contents: Read and write`；
-   - 令牌仅存于 sessionStorage（关闭标签页即销毁），验证通过才会解锁编辑功能；
+   - 首次使用需「设置管理员密码」：令牌用该密码通过 PBKDF2（25 万次迭代）派生密钥后以 AES-256-GCM 加密，
+     仅保存在本浏览器 localStorage；之后用密码登录（解锁），令牌只解密进内存，关闭标签页即销毁；
+   - 解锁后会向 GitHub 校验仓库 `permissions.push`，没有写权限的账户无法进入；
    - 保存即产生一次 commit；`.github/workflows/deploy.yml` 会在 `blog/**` 变更推到 main 后
      自动构建并同步到仓库根目录（GitHub Pages 发布源），约 1–2 分钟线上更新。
 
