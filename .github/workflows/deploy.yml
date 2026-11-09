@@ -42,7 +42,7 @@ jobs:
         run: npx hexo clean && npx hexo generate
 
       - name: Sync build output to repo root
-        run: rsync -a --delete --exclude='.git' --exclude='blog' --exclude='.github' blog/public/ ./
+        run: rsync -a --delete --exclude='.git' --exclude='blog' --exclude='.github' --exclude='.nojekyll' blog/public/ ./
 
       - name: Commit & push if changed
         run: |
