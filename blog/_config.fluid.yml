@@ -1,0 +1,174 @@
+# Fluid 主题自定义配置（会与主题内置的 _config.yml 合并，这里只写需要覆盖的项）
+# 配置文档: https://hexo.fluid-dev.com/docs/guide/
+
+# 用于浏览器标签的图标
+favicon: /img/github-desktop.png
+# 用于苹果设备的图标
+apple_touch_icon: /img/github-desktop.png
+
+# 页头
+navbar:
+  # 导航栏左侧的标题，为空则按 hexo config 中 `title` 显示
+  blog_title: "Blog"
+  menu:
+    - { key: "home", link: "/", icon: "iconfont icon-home-fill" }
+    - { key: "archive", link: "/archives/", icon: "iconfont icon-archive-fill" }
+    - { key: "category", link: "/categories/", icon: "iconfont icon-category-fill" }
+    - { key: "tag", link: "/tags/", icon: "iconfont icon-tags-fill" }
+    - { key: "links", link: "/links/", icon: "iconfont icon-link-fill" }
+    - { key: "editor", link: "/editor/", name: "编辑器" }
+    - { key: "admin", link: "/admin/", name: "管理" }
+    - { key: "about", link: "/about/", icon: "iconfont icon-user-fill" }
+
+# 搜索（基于 hexo-generator-searchdb，已在 _config.yml 中配置索引文件）
+search:
+  enable: true
+  path: /local-search.xml
+  generate_path: /local-search.xml
+  field: post
+  content: true
+
+# 首屏打字机副标题
+fun_features:
+  typing:
+    enable: true
+    typeSpeed: 40
+    cursorChar: "_"
+    loop: false
+    scope: ["home", "about"]
+  anchorjs:
+    enable: true
+    icon: " # "
+  progressbar:
+    enable: true
+
+# 首页
+index:
+  banner_img: /img/default.png
+  banner_img_height: 100
+  banner_mask_alpha: 0.3
+  slogan:
+    enable: true
+    text:
+      - "Welcome to xiaohuage2026's Blog."
+  auto_excerpt:
+    enable: true
+
+# 文章页
+post:
+  banner_img: /img/default.png
+  banner_img_height: 70
+  banner_mask_alpha: 0.3
+  # 文章开头显示更新时间
+  updated:
+    enable: true
+    note_class: info
+  # 版权声明（含 CC 图标、作者、发布于等），已按需关闭
+  copyright:
+    enable: false
+  toc:
+    enable: true
+    expand_all: true
+    placement: left
+  # 侧边栏分类
+  category_bar:
+    enable: true
+    specific: false
+  # 数学公式（KaTeX，服务端 markdown-it-texmath 渲染，KaTeX 提供样式）
+  math:
+    enable: true
+    specific: false
+    engine: katex
+  # Mermaid 流程图
+  mermaid:
+    enable: true
+    specific: false
+    options: { theme: 'default' }
+
+# 归档页
+archive:
+  banner_img: /img/default.png
+  banner_img_height: 60
+  banner_mask_alpha: 0.3
+
+# 分类页
+category:
+  enable: true
+  banner_img: /img/default.png
+  banner_img_height: 60
+  banner_mask_alpha: 0.3
+
+# 标签页
+tag:
+  enable: true
+  banner_img: /img/default.png
+  banner_img_height: 80
+  banner_mask_alpha: 0.3
+
+# 关于页
+about:
+  enable: true
+  banner_img: /img/default.png
+  banner_img_height: 60
+  banner_mask_alpha: 0.3
+  avatar: /img/avatar.png
+  name: "xiaohuage2026"
+  intro: "热爱技术，持续学习"
+  icons:
+    - { class: "iconfont icon-github-fill", link: "https://github.com/xiaohuage2026", tip: "GitHub" }
+
+# 自定义 JS/CSS（相对 source/ 目录）
+custom_css:
+  - /css/custom.css
+
+# 数学公式与流程图改走本地静态资源（避免 CDN 不可用导致公式/图表错乱）
+static_prefix:
+  katex: /vendor/katex/
+  mermaid: /vendor/mermaid/
+
+# 友链页
+links:
+  enable: true
+  banner_img: /img/default.png
+  banner_img_height: 60
+  banner_mask_alpha: 0.3
+  items:
+    - {
+      title: "Fluid Blog",
+      intro: "主题博客",
+      link: "https://hexo.fluid-dev.com/",
+      avatar: "https://hexo.fluid-dev.com/img/fluid.png"
+    }
+    - {
+      title: "Fluid Docs",
+      intro: "主题使用指南",
+      link: "https://hexo.fluid-dev.com/docs/",
+      avatar: "https://hexo.fluid-dev.com/img/fluid.png"
+    }
+    - {
+      title: "Hexo",
+      intro: "Hexo 官方博客",
+      link: "https://hexo.io/",
+      avatar: "https://hexo.io/images/logo.svg"
+    }
+  custom:
+    enable: true
+    content: '<hr><p>欢迎交换友链，请在 GitHub 上联系 <a href="https://github.com/xiaohuage2026" target="_blank" rel="noopener">@xiaohuage2026</a>，并按以下格式提供信息：</p><ul><li>博客名：</li><li>简介：</li><li>链接：</li><li>头像：</li></ul>'
+
+# 页脚
+footer:
+  content: '
+    <span>© 2026 xiaohuage2026</span>
+  '
+  statistics:
+    enable: false
+  beian:
+    enable: false
+
+# 404 页
+page404:
+  enable: true
+  banner_img: /img/default.png
+  banner_img_height: 85
+  banner_mask_alpha: 0.3
+  redirect_delay: 5000
