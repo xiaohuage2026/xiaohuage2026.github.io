@@ -1,3 +1,18 @@
+/* Banner 副标题小字（Welcome to xiaohuage2026's Blog. 下方） */
+.banner-subtitle-small {
+  margin-top: 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 300;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em; /* 抵消 letter-spacing 造成的末尾偏移，保持居中 */
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  user-select: none;
+}
+@media (max-width: 768px) {
+  .banner-subtitle-small { font-size: 0.75rem; letter-spacing: 0.25em; text-indent: 0.25em; margin-top: 0.4rem; }
+}
+
 /* 自定义样式：在线编辑按钮 */
 .online-edit {
   margin: 2rem 0 0.5rem;

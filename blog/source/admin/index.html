@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="description" content="xiaohuage2026's Blog 管理员界面：通过 GitHub API 在线编辑、新建、删除文章（仅仓库管理员可操作）">
+  <meta name="description" content="xiaohuage2026's Blog 管理员界面：密码登录（本地加密保存 GitHub 令牌），在线修改文章（仅管理员可操作）">
   <title>管理员界面 · xiaohuage2026's Blog</title>
   <link rel="icon" href="/img/github-desktop.png">
   <style>
@@ -57,20 +57,25 @@
       width: min(560px, 100%); background: var(--panel); border: 1px solid var(--border);
       border-radius: 10px; padding: 28px 30px; box-shadow: 0 8px 30px rgba(0,0,0,.12);
     }
-    .gate-card h1 { margin: 0 0 6px; font-size: 20px; }
-    .gate-card p.desc { margin: 0 0 14px; font-size: 13px; color: var(--text-sec); line-height: 1.7; }
+    .gate-card h1 { margin: 0 0 6px; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+    .gate-card p.desc { margin: 0 0 6px; font-size: 13px; color: var(--text-sec); line-height: 1.7; }
     .gate-card label { font-size: 13px; font-weight: 600; display: block; margin: 12px 0 6px; }
-    .gate-card input[type="password"], .gate-card input[type="text"] {
+    .gate-card input {
       width: 100%; height: 38px; padding: 0 12px; font-size: 14px;
       border: 1px solid var(--border); border-radius: 6px; outline: none;
       background: var(--bg); color: var(--text); font-family: inherit;
     }
     .gate-card input:focus { border-color: var(--accent); }
-    .gate-card .connect {
-      margin-top: 14px; width: 100%; height: 40px; font-size: 14px; font-weight: 600;
+    .gate-card .primary-btn {
+      margin-top: 16px; width: 100%; height: 40px; font-size: 14px; font-weight: 600;
       color: #fff; background: var(--primary); border: none; border-radius: 6px; cursor: pointer;
     }
-    .gate-card .connect:hover { background: var(--primary-hover); }
+    .gate-card .primary-btn:hover { background: var(--primary-hover); }
+    .gate-card .link-btn {
+      margin-top: 10px; width: 100%; background: none; border: none; cursor: pointer;
+      color: var(--accent); font-size: 12.5px; padding: 6px; font-family: inherit;
+    }
+    .gate-card .link-btn:hover { text-decoration: underline; }
     .gate-card .hint {
       margin-top: 14px; font-size: 12px; color: var(--text-sec); line-height: 1.8;
       background: var(--code-bg); border-radius: 6px; padding: 10px 12px;
@@ -80,6 +85,8 @@
       display: none; margin-top: 12px; font-size: 13px; color: #fff;
       background: var(--danger); border-radius: 6px; padding: 10px 12px; line-height: 1.6;
     }
+    .mode { display: none; }
+    .mode.visible { display: block; }
 
     /* ===== 管理主界面 ===== */
     .admin { flex: 1; display: none; flex-direction: column; min-height: 0; }
@@ -180,25 +187,41 @@
   <button class="btn" id="btn-logout" style="display:none">退出登录</button>
 </header>
 
-<!-- 登录闸门：只有持有本仓库写权限 GitHub 账户的管理员才能进入 -->
+<!-- 密码登录闸门 -->
 <div class="gate" id="gate">
   <div class="gate-card">
-    <h1>管理员登录</h1>
-    <p class="desc">本页面通过 GitHub API 直接读取 / 修改仓库中的文章源码（<code>blog/source/_posts/</code>）。只有<b>对仓库有写权限的 GitHub 账户（管理员 / 协作者）</b>才能保存、新建或删除文章——其他访客没有令牌，无法做任何修改。</p>
 
-    <label for="token">GitHub Personal Access Token</label>
-    <input type="password" id="token" placeholder="github_pat_… 或 ghp_…" autocomplete="off" spellcheck="false">
-
-    <button class="connect" id="btn-connect">连接并验证</button>
-    <div class="error" id="gate-error"></div>
-
-    <div class="hint">
-      <b>获取方式（推荐 Fine-grained Token）：</b><br>
-      GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token：<br>
-      ① Resource owner 选择 <code>xiaohuage2026</code>；② Repository access 仅勾选 <code>xiaohuage2026.github.io</code>；<br>
-      ③ Permissions → Repository permissions → <b>Contents: Read and write</b>（Metadata 只读会自动附带）。<br>
-      令牌仅保存在<b>当前标签页会话</b>（sessionStorage），关闭标签页即销毁；验证通过前不会加载任何编辑功能。
+    <!-- 模式 A：已设置过管理员密码（解锁） -->
+    <div class="mode" id="mode-lock">
+      <h1>🔒 管理员解锁</h1>
+      <p class="desc">输入管理员密码，解锁本浏览器中加密保存的 GitHub 令牌。解锁后会自动向 GitHub 校验仓库写权限——只有管理员（对仓库有写权限的账户）才能进入。</p>
+      <label for="lock-password">管理员密码</label>
+      <input type="password" id="lock-password" placeholder="首次设置时的管理员密码" autocomplete="current-password" spellcheck="false">
+      <button class="primary-btn" id="btn-unlock">解锁并进入</button>
+      <button class="link-btn" id="btn-reset-vault">忘记密码？清除本地凭据并重新设置</button>
     </div>
+
+    <!-- 模式 B：首次使用（设置密码） -->
+    <div class="mode" id="mode-setup">
+      <h1>🛠️ 首次设置管理员密码</h1>
+      <p class="desc">本页面通过 GitHub API 直接读写仓库文章源码（<code>blog/source/_posts/</code>）。先粘贴你的 GitHub Fine-grained Token（仅本仓库、Contents: Read and write），并设置一个管理员密码——令牌会用你的密码加密后仅保存在本浏览器中。</p>
+      <label for="setup-token">GitHub Personal Access Token（Fine-grained，Contents: Read and write）</label>
+      <input type="password" id="setup-token" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+      <label for="setup-password">设置管理员密码（至少 8 位）</label>
+      <input type="password" id="setup-password" placeholder="管理员密码" autocomplete="new-password" spellcheck="false">
+      <label for="setup-password2">确认密码</label>
+      <input type="password" id="setup-password2" placeholder="再输入一次" autocomplete="new-password" spellcheck="false">
+      <button class="primary-btn" id="btn-create">创建并登录</button>
+      <div class="hint">
+        <b>安全说明</b><br>
+        ① 密码不会被上传到任何地方，仅用于在本地用 AES-256-GCM（PBKDF2 派生，25 万次迭代）加密解密令牌；<br>
+        ② 加密后的令牌保存在本浏览器 localStorage，换设备 / 换浏览器需重新设置；<br>
+        ③ 即使令牌被离线拿到，没有密码也无法解密；而 GitHub 服务端始终校验写权限；<br>
+        ④ 密码只保护「存储在本浏览器的令牌」，它不是多用户账号体系，请勿与他人共享。
+      </div>
+    </div>
+
+    <div class="error" id="gate-error"></div>
   </div>
 </div>
 
@@ -252,13 +275,20 @@
   var BRANCH = 'main';
   var DIR = 'blog/source/_posts';
   var API = 'https://api.github.com/repos/' + OWNER + '/' + REPO;
-  var TOKEN_KEY = 'admin_gh_token';
+  var VAULT_KEY = 'admin_vault_v1';
 
   var gate = document.getElementById('gate');
   var admin = document.getElementById('admin');
+  var modeLock = document.getElementById('mode-lock');
+  var modeSetup = document.getElementById('mode-setup');
   var gateError = document.getElementById('gate-error');
-  var tokenInput = document.getElementById('token');
-  var btnConnect = document.getElementById('btn-connect');
+  var lockPassword = document.getElementById('lock-password');
+  var btnUnlock = document.getElementById('btn-unlock');
+  var btnResetVault = document.getElementById('btn-reset-vault');
+  var setupToken = document.getElementById('setup-token');
+  var setupPassword = document.getElementById('setup-password');
+  var setupPassword2 = document.getElementById('setup-password2');
+  var btnCreate = document.getElementById('btn-create');
   var btnLogout = document.getElementById('btn-logout');
   var fileList = document.getElementById('file-list');
   var editorPane = document.getElementById('editor-pane');
@@ -274,9 +304,9 @@
   var who = document.getElementById('who');
   var statusEl = document.getElementById('status');
 
-  var token = '';
+  var token = null;      // 仅保存在内存中
   var files = [];
-  var current = null; // { name, sha, isNew }
+  var current = null;    // { name, sha, isNew }
 
   /* ---------- 工具 ---------- */
   function setStatus(msg, type) {
@@ -301,8 +331,65 @@
     for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
     return btoa(bin);
   }
+  function bytesToB64(bytes) {
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function b64ToBytes(b64) {
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
   function encodePath(p) {
     return p.split('/').map(encodeURIComponent).join('/');
+  }
+
+  /* ---------- 本地加密保险箱（AES-256-GCM + PBKDF2） ---------- */
+  function getVault() {
+    try {
+      var raw = localStorage.getItem(VAULT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function clearVault() {
+    try { localStorage.removeItem(VAULT_KEY); } catch (e) { /* ignore */ }
+  }
+  async function deriveKey(password, salt) {
+    var base = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: salt, iterations: 250000, hash: 'SHA-256' },
+      base,
+      { name: 'AES-GCM', length: 256 },
+      false, ['encrypt', 'decrypt']);
+  }
+  async function encryptToken(password, plainToken) {
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var key = await deriveKey(password, salt);
+    var ct = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(plainToken));
+    var vault = { v: 1, salt: bytesToB64(salt), iv: bytesToB64(iv), ct: bytesToB64(new Uint8Array(ct)) };
+    localStorage.setItem(VAULT_KEY, JSON.stringify(vault));
+  }
+  async function decryptToken(password) {
+    var vault = getVault();
+    if (!vault) throw new Error('本地凭据不存在，请重新设置');
+    var key = await deriveKey(password, b64ToBytes(vault.salt));
+    var pt = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: b64ToBytes(vault.iv) }, key, b64ToBytes(vault.ct));
+    return new TextDecoder('utf-8').decode(pt);
+  }
+
+  /* ---------- 闸门模式切换 ---------- */
+  function showMode(name) {
+    modeLock.classList.toggle('visible', name === 'lock');
+    modeSetup.classList.toggle('visible', name === 'setup');
+  }
+  function refreshGateMode() {
+    showMode(getVault() ? 'lock' : 'setup');
   }
 
   function api(path, options) {
@@ -315,59 +402,105 @@
     return fetch(API + path, options);
   }
 
-  /* ---------- 登录 / 验证 ---------- */
-  async function connect(savedToken) {
-    var t = (savedToken || tokenInput.value).trim();
-    if (!t) { showError('请输入令牌'); return; }
-    hideError();
-    btnConnect.disabled = true;
-    btnConnect.textContent = '验证中…';
-    try {
-      var repoResp = await fetch(API, {
-        headers: {
-          'Authorization': 'Bearer ' + t,
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28'
-        }
-      });
-      if (repoResp.status === 401) throw new Error('令牌无效或已过期（HTTP 401），请重新生成');
-      if (repoResp.status === 404) throw new Error('令牌无法访问仓库（HTTP 404），可能 token 缺少本仓库权限');
-      if (!repoResp.ok) throw new Error('GitHub 返回 HTTP ' + repoResp.status);
-      var repo = await repoResp.json();
-      var perms = repo.permissions || {};
-      if (!perms.push) {
-        throw new Error('该账户对仓库没有写权限。只有管理员 / 协作者（push 权限）才能进入。');
+  /* ---------- 用令牌向 GitHub 验证写权限并进入后台 ---------- */
+  async function verifyAndEnter(candidateToken) {
+    var repoResp = await fetch(API, {
+      headers: {
+        'Authorization': 'Bearer ' + candidateToken,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
       }
-      var userResp = await fetch('https://api.github.com/user', {
-        headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/vnd.github+json' }
-      });
-      var user = userResp.ok ? await userResp.json() : { login: 'unknown' };
+    });
+    if (repoResp.status === 401) throw new Error('令牌无效或已过期（HTTP 401），请重新生成并设置');
+    if (repoResp.status === 404) throw new Error('令牌无法访问仓库（HTTP 404），可能缺少本仓库权限');
+    if (!repoResp.ok) throw new Error('GitHub 返回 HTTP ' + repoResp.status);
+    var repo = await repoResp.json();
+    var perms = repo.permissions || {};
+    if (!perms.push) {
+      throw new Error('该账户对仓库没有写权限。只有管理员 / 协作者（push 权限）才能进入。');
+    }
+    var userResp = await fetch('https://api.github.com/user', {
+      headers: { 'Authorization': 'Bearer ' + candidateToken, 'Accept': 'application/vnd.github+json' }
+    });
+    var user = userResp.ok ? await userResp.json() : { login: 'unknown' };
 
-      token = t;
-      try { sessionStorage.setItem(TOKEN_KEY, token); } catch (e) { /* ignore */ }
+    token = candidateToken;
+    who.innerHTML = '已认证：<b>' + user.login + '</b> · 管理员';
+    btnLogout.style.display = 'inline-flex';
+    gate.style.display = 'none';
+    admin.style.display = 'flex';
+    setStatus('已连接到 ' + OWNER + '/' + REPO, 'ok');
+    loadFiles();
+  }
 
-      who.innerHTML = '已认证：<b>' + user.login + '</b> · 管理员';
-      btnLogout.style.display = 'inline-flex';
-      gate.style.display = 'none';
-      admin.style.display = 'flex';
-      setStatus('已连接到 ' + OWNER + '/' + REPO, 'ok');
-      loadFiles();
+  /* ---------- 解锁（密码登录） ---------- */
+  async function unlock() {
+    var password = lockPassword.value;
+    if (!password) { showError('请输入管理员密码'); return; }
+    hideError();
+    btnUnlock.disabled = true;
+    btnUnlock.textContent = '解锁中…';
+    try {
+      var plainToken;
+      try {
+        plainToken = await decryptToken(password);
+      } catch (e) {
+        throw new Error('密码错误，无法解密本地凭据（请重试，或点击下方链接重新设置）');
+      }
+      await verifyAndEnter(plainToken);
+      lockPassword.value = '';
     } catch (err) {
       showError(err.message || String(err));
-      try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ }
     } finally {
-      btnConnect.disabled = false;
-      btnConnect.textContent = '连接并验证';
+      btnUnlock.disabled = false;
+      btnUnlock.textContent = '解锁并进入';
     }
   }
 
+  /* ---------- 首次设置（令牌 + 管理员密码） ---------- */
+  async function createVault() {
+    var pat = setupToken.value.trim();
+    var pw = setupPassword.value;
+    var pw2 = setupPassword2.value;
+    hideError();
+    if (!pat) { showError('请粘贴 GitHub Fine-grained Token'); return; }
+    if (!pw || pw.length < 8) { showError('管理员密码至少需要 8 位'); return; }
+    if (pw !== pw2) { showError('两次输入的密码不一致'); return; }
+    btnCreate.disabled = true;
+    btnCreate.textContent = '验证并加密中…';
+    try {
+      await verifyAndEnter(pat);               // 先确认真令牌 + 写权限
+      try {
+        await encryptToken(pw, pat);           // 再本地加密保存
+      } catch (encErr) {
+        setStatus('已登录，但本地加密保存失败（' + (encErr.message || encErr) + '）；下次需重新设置', 'fail');
+      }
+      setupToken.value = '';
+      setupPassword.value = '';
+      setupPassword2.value = '';
+    } catch (err) {
+      showError(err.message || String(err));
+    } finally {
+      btnCreate.disabled = false;
+      btnCreate.textContent = '创建并登录';
+    }
+  }
+
+  function resetVault() {
+    if (!window.confirm('将清除本浏览器中加密保存的令牌，需要重新粘贴 Fine-grained Token 并设置新密码。确定继续？')) return;
+    clearVault();
+    hideError();
+    lockPassword.value = '';
+    refreshGateMode();
+  }
+
   function logout() {
-    token = '';
+    token = null;
     current = null;
-    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ }
     admin.style.display = 'none';
     gate.style.display = 'flex';
-    tokenInput.value = '';
+    btnLogout.style.display = 'none';
+    refreshGateMode();
     setStatus('已退出');
   }
 
@@ -534,8 +667,13 @@
   }
 
   /* ---------- 事件绑定 ---------- */
-  btnConnect.addEventListener('click', function () { connect(); });
-  tokenInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') connect(); });
+  btnUnlock.addEventListener('click', unlock);
+  lockPassword.addEventListener('keydown', function (e) { if (e.key === 'Enter') unlock(); });
+  btnResetVault.addEventListener('click', resetVault);
+  btnCreate.addEventListener('click', createVault);
+  [setupToken, setupPassword, setupPassword2].forEach(function (el) {
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') createVault(); });
+  });
   btnLogout.addEventListener('click', logout);
   btnNew.addEventListener('click', newFile);
   btnRefresh.addEventListener('click', loadFiles);
@@ -551,10 +689,8 @@
     }
   });
 
-  /* 自动登录（本会话已验证过的令牌） */
-  var saved = null;
-  try { saved = sessionStorage.getItem(TOKEN_KEY); } catch (e) { /* ignore */ }
-  if (saved) connect(saved);
+  /* 初始化闸门模式 */
+  refreshGateMode();
 })();
 </script>
 </body>
