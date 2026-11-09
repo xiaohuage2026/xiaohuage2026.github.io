@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="xiaohuage2026's Blog 管理员界面：通过 GitHub API 在线编辑、新建、删除文章（仅仓库管理员可操作）">
+  <title>管理员界面 · xiaohuage2026's Blog</title>
+  <link rel="icon" href="/img/github-desktop.png">
+  <style>
+    :root {
+      --bg: #f5f7fa; --panel: #ffffff; --text: #2c3e50; --text-sec: #718096;
+      --border: #e2e8f0; --primary: #2f4154; --primary-hover: #3d5570;
+      --accent: #0366d6; --danger: #dc2626; --code-bg: #f6f8fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #181c27; --panel: #252d38; --text: #c4c6c9; --text-sec: #a7a9ad;
+        --border: #435266; --primary: #7aa2c4; --primary-hover: #8fb2d1;
+        --accent: #58a6ff; --danger: #f87171; --code-bg: #2d3340;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+    }
+
+    /* ===== 顶栏 ===== */
+    .topbar {
+      display: flex; align-items: center; gap: 14px; padding: 0 16px;
+      height: 52px; flex: 0 0 52px; background: var(--primary); color: #fff;
+    }
+    .topbar .brand { color: #fff; text-decoration: none; font-size: 14px; opacity: .85; white-space: nowrap; }
+    .topbar .brand:hover { opacity: 1; }
+    .topbar .title { font-weight: 700; font-size: 16px; letter-spacing: .05em; }
+    .topbar .badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 10px;
+      background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.35); white-space: nowrap;
+    }
+    .topbar .spacer { flex: 1; }
+    .btn {
+      height: 32px; padding: 0 12px; font-size: 13px; cursor: pointer;
+      color: #fff; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+      border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+      transition: background .15s; white-space: nowrap; font-family: inherit;
+    }
+    .btn:hover { background: rgba(255,255,255,.3); }
+
+    /* ===== 登录闸门 ===== */
+    .gate {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .gate-card {
+      width: min(560px, 100%); background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 28px 30px; box-shadow: 0 8px 30px rgba(0,0,0,.12);
+    }
+    .gate-card h1 { margin: 0 0 6px; font-size: 20px; }
+    .gate-card p.desc { margin: 0 0 14px; font-size: 13px; color: var(--text-sec); line-height: 1.7; }
+    .gate-card label { font-size: 13px; font-weight: 600; display: block; margin: 12px 0 6px; }
+    .gate-card input[type="password"], .gate-card input[type="text"] {
+      width: 100%; height: 38px; padding: 0 12px; font-size: 14px;
+      border: 1px solid var(--border); border-radius: 6px; outline: none;
+      background: var(--bg); color: var(--text); font-family: inherit;
+    }
+    .gate-card input:focus { border-color: var(--accent); }
+    .gate-card .connect {
+      margin-top: 14px; width: 100%; height: 40px; font-size: 14px; font-weight: 600;
+      color: #fff; background: var(--primary); border: none; border-radius: 6px; cursor: pointer;
+    }
+    .gate-card .connect:hover { background: var(--primary-hover); }
+    .gate-card .hint {
+      margin-top: 14px; font-size: 12px; color: var(--text-sec); line-height: 1.8;
+      background: var(--code-bg); border-radius: 6px; padding: 10px 12px;
+    }
+    .gate-card .hint code { background: rgba(127,127,127,.18); padding: 0 5px; border-radius: 3px; }
+    .gate-card .error {
+      display: none; margin-top: 12px; font-size: 13px; color: #fff;
+      background: var(--danger); border-radius: 6px; padding: 10px 12px; line-height: 1.6;
+    }
+
+    /* ===== 管理主界面 ===== */
+    .admin { flex: 1; display: none; flex-direction: column; min-height: 0; }
+    .toolbar {
+      display: flex; align-items: center; gap: 8px; padding: 6px 12px; flex: 0 0 44px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    .toolbar button {
+      height: 32px; padding: 0 12px; font-size: 13px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      border-radius: 4px; font-family: inherit;
+    }
+    .toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+    .toolbar .spacer { flex: 1; }
+    .toolbar .who { font-size: 12px; color: var(--text-sec); }
+    .toolbar .who b { color: var(--accent); }
+
+    .workspace { flex: 1; display: flex; min-height: 0; }
+
+    /* 文件列表 */
+    .sidebar {
+      flex: 0 0 260px; overflow-y: auto; background: var(--panel);
+      border-right: 1px solid var(--border); padding: 10px 8px;
+    }
+    .sidebar .side-title { font-size: 11px; color: var(--text-sec); letter-spacing: .08em; padding: 2px 8px 8px; }
+    .file-item {
+      display: block; width: 100%; text-align: left; border: none; background: transparent;
+      padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text);
+      font-family: inherit; line-height: 1.5; word-break: break-all;
+    }
+    .file-item:hover { background: var(--code-bg); }
+    .file-item.active { background: var(--primary); color: #fff; }
+    .file-item small { display: block; color: var(--text-sec); font-size: 11px; margin-top: 2px; }
+    .file-item.active small { color: rgba(255,255,255,.75); }
+
+    /* 编辑区 */
+    .editor-pane { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--panel); }
+    .file-meta {
+      flex: 0 0 38px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+      font-size: 12px; color: var(--text-sec); border-bottom: 1px solid var(--border);
+      font-family: "SF Mono", Consolas, Menlo, monospace; white-space: nowrap; overflow: hidden;
+    }
+    .file-meta input#new-name {
+      display: none; height: 26px; padding: 0 8px; font-size: 12px; font-family: inherit;
+      border: 1px solid var(--accent); border-radius: 4px; outline: none; width: 280px;
+      background: var(--bg); color: var(--text);
+    }
+    #editor {
+      flex: 1; min-height: 0; resize: none; border: none; outline: none;
+      padding: 16px 20px; font-size: 13.5px; line-height: 1.75;
+      font-family: "SF Mono", "JetBrains Mono", Consolas, Menlo, monospace;
+      background: var(--panel); color: var(--text); tab-size: 2;
+    }
+    .action-bar {
+      flex: 0 0 52px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+      border-top: 1px solid var(--border); background: var(--panel);
+    }
+    .action-bar input[type="text"] {
+      flex: 1; height: 34px; padding: 0 10px; font-size: 13px;
+      border: 1px solid var(--border); border-radius: 4px; outline: none;
+      background: var(--bg); color: var(--text); font-family: inherit;
+    }
+    .action-bar input[type="text"]:focus { border-color: var(--accent); }
+    .action-bar button {
+      height: 34px; padding: 0 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+      border-radius: 4px; border: none; font-family: inherit; white-space: nowrap;
+    }
+    .btn-save { background: #1a7f37; color: #fff; }
+    .btn-save:hover { background: #22863a; }
+    .btn-delete { background: transparent; color: var(--danger); border: 1px solid var(--danger) !important; }
+    .btn-delete:hover { background: var(--danger); color: #fff; }
+    .empty-state {
+      flex: 1; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center;
+      color: var(--text-sec); font-size: 14px; text-align: center; line-height: 2;
+    }
+
+    /* 状态栏 */
+    .statusbar {
+      flex: 0 0 30px; display: flex; align-items: center; gap: 16px; padding: 0 14px;
+      font-size: 12px; border-top: 1px solid var(--border); background: var(--panel); color: var(--text-sec);
+    }
+    .statusbar .grow { flex: 1; }
+    .statusbar .ok { color: #1a7f37; }
+    .statusbar .fail { color: var(--danger); }
+    @media (max-width: 860px) {
+      .sidebar { display: none; }
+      .action-bar { flex-wrap: wrap; height: auto; padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/">← 返回博客</a>
+  <span class="title">管理员界面</span>
+  <span class="badge">xiaohuage2026 / xiaohuage2026.github.io · main</span>
+  <div class="spacer"></div>
+  <button class="btn" id="btn-logout" style="display:none">退出登录</button>
+</header>
+
+<!-- 登录闸门：只有持有本仓库写权限 GitHub 账户的管理员才能进入 -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <h1>管理员登录</h1>
+    <p class="desc">本页面通过 GitHub API 直接读取 / 修改仓库中的文章源码（<code>blog/source/_posts/</code>）。只有<b>对仓库有写权限的 GitHub 账户（管理员 / 协作者）</b>才能保存、新建或删除文章——其他访客没有令牌，无法做任何修改。</p>
+
+    <label for="token">GitHub Personal Access Token</label>
+    <input type="password" id="token" placeholder="github_pat_… 或 ghp_…" autocomplete="off" spellcheck="false">
+
+    <button class="connect" id="btn-connect">连接并验证</button>
+    <div class="error" id="gate-error"></div>
+
+    <div class="hint">
+      <b>获取方式（推荐 Fine-grained Token）：</b><br>
+      GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token：<br>
+      ① Resource owner 选择 <code>xiaohuage2026</code>；② Repository access 仅勾选 <code>xiaohuage2026.github.io</code>；<br>
+      ③ Permissions → Repository permissions → <b>Contents: Read and write</b>（Metadata 只读会自动附带）。<br>
+      令牌仅保存在<b>当前标签页会话</b>（sessionStorage），关闭标签页即销毁；验证通过前不会加载任何编辑功能。
+    </div>
+  </div>
+</div>
+
+<!-- 管理主界面 -->
+<main class="admin" id="admin">
+  <div class="toolbar">
+    <button id="btn-new">＋ 新建文章</button>
+    <button id="btn-refresh">⟳ 刷新列表</button>
+    <span class="spacer"></span>
+    <span class="who" id="who"></span>
+  </div>
+
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="side-title">文章列表（blog/source/_posts）</div>
+      <div id="file-list"></div>
+    </aside>
+
+    <section class="editor-pane" id="editor-pane" style="display:none">
+      <div class="file-meta">
+        <span id="file-path">—</span>
+        <input type="text" id="new-name" placeholder="文件名，如 my-post.md" spellcheck="false">
+      </div>
+      <textarea id="editor" spellcheck="false" placeholder="选择文件，或点击「新建文章」"></textarea>
+      <div class="action-bar">
+        <input type="text" id="commit-msg" placeholder="提交信息，例如：chore(post): 修改《你好，Hexo！》">
+        <button class="btn-save" id="btn-save">保存并提交</button>
+        <button class="btn-delete" id="btn-delete">删除</button>
+      </div>
+    </section>
+
+    <section class="empty-state" id="empty-state">
+      <div>📝</div>
+      <div>从左侧选择一篇文章开始编辑<br>或点击「＋ 新建文章」</div>
+    </section>
+  </div>
+
+  <footer class="statusbar">
+    <span id="status">就绪</span>
+    <span class="grow"></span>
+    <span>保存后约 1–2 分钟自动构建上线（GitHub Actions）</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var OWNER = 'xiaohuage2026';
+  var REPO = 'xiaohuage2026.github.io';
+  var BRANCH = 'main';
+  var DIR = 'blog/source/_posts';
+  var API = 'https://api.github.com/repos/' + OWNER + '/' + REPO;
+  var TOKEN_KEY = 'admin_gh_token';
+
+  var gate = document.getElementById('gate');
+  var admin = document.getElementById('admin');
+  var gateError = document.getElementById('gate-error');
+  var tokenInput = document.getElementById('token');
+  var btnConnect = document.getElementById('btn-connect');
+  var btnLogout = document.getElementById('btn-logout');
+  var fileList = document.getElementById('file-list');
+  var editorPane = document.getElementById('editor-pane');
+  var emptyState = document.getElementById('empty-state');
+  var filePathEl = document.getElementById('file-path');
+  var newNameInput = document.getElementById('new-name');
+  var editor = document.getElementById('editor');
+  var commitMsg = document.getElementById('commit-msg');
+  var btnSave = document.getElementById('btn-save');
+  var btnDelete = document.getElementById('btn-delete');
+  var btnNew = document.getElementById('btn-new');
+  var btnRefresh = document.getElementById('btn-refresh');
+  var who = document.getElementById('who');
+  var statusEl = document.getElementById('status');
+
+  var token = '';
+  var files = [];
+  var current = null; // { name, sha, isNew }
+
+  /* ---------- 工具 ---------- */
+  function setStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusEl.className = type || '';
+  }
+  function showError(msg) {
+    gateError.style.display = 'block';
+    gateError.textContent = msg;
+  }
+  function hideError() {
+    gateError.style.display = 'none';
+  }
+  function b64DecodeUtf8(str) {
+    var bin = atob(String(str).replace(/\s/g, ''));
+    var bytes = Uint8Array.from(bin, function (c) { return c.charCodeAt(0); });
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  function b64EncodeUtf8(str) {
+    var bytes = new TextEncoder().encode(str);
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function encodePath(p) {
+    return p.split('/').map(encodeURIComponent).join('/');
+  }
+
+  function api(path, options) {
+    options = options || {};
+    options.headers = Object.assign({
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }, options.headers || {});
+    return fetch(API + path, options);
+  }
+
+  /* ---------- 登录 / 验证 ---------- */
+  async function connect(savedToken) {
+    var t = (savedToken || tokenInput.value).trim();
+    if (!t) { showError('请输入令牌'); return; }
+    hideError();
+    btnConnect.disabled = true;
+    btnConnect.textContent = '验证中…';
+    try {
+      var repoResp = await fetch(API, {
+        headers: {
+          'Authorization': 'Bearer ' + t,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+      if (repoResp.status === 401) throw new Error('令牌无效或已过期（HTTP 401），请重新生成');
+      if (repoResp.status === 404) throw new Error('令牌无法访问仓库（HTTP 404），可能 token 缺少本仓库权限');
+      if (!repoResp.ok) throw new Error('GitHub 返回 HTTP ' + repoResp.status);
+      var repo = await repoResp.json();
+      var perms = repo.permissions || {};
+      if (!perms.push) {
+        throw new Error('该账户对仓库没有写权限。只有管理员 / 协作者（push 权限）才能进入。');
+      }
+      var userResp = await fetch('https://api.github.com/user', {
+        headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/vnd.github+json' }
+      });
+      var user = userResp.ok ? await userResp.json() : { login: 'unknown' };
+
+      token = t;
+      try { sessionStorage.setItem(TOKEN_KEY, token); } catch (e) { /* ignore */ }
+
+      who.innerHTML = '已认证：<b>' + user.login + '</b> · 管理员';
+      btnLogout.style.display = 'inline-flex';
+      gate.style.display = 'none';
+      admin.style.display = 'flex';
+      setStatus('已连接到 ' + OWNER + '/' + REPO, 'ok');
+      loadFiles();
+    } catch (err) {
+      showError(err.message || String(err));
+      try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ }
+    } finally {
+      btnConnect.disabled = false;
+      btnConnect.textContent = '连接并验证';
+    }
+  }
+
+  function logout() {
+    token = '';
+    current = null;
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ }
+    admin.style.display = 'none';
+    gate.style.display = 'flex';
+    tokenInput.value = '';
+    setStatus('已退出');
+  }
+
+  /* ---------- 文件列表 ---------- */
+  async function loadFiles() {
+    fileList.innerHTML = '<div class="side-title">加载中…</div>';
+    try {
+      var resp = await api('/contents/' + encodePath(DIR) + '?ref=' + BRANCH);
+      if (!resp.ok) throw new Error('获取文件列表失败（HTTP ' + resp.status + '）');
+      var data = await resp.json();
+      files = (Array.isArray(data) ? data : [])
+        .filter(function (f) { return f.type === 'file' && /\.md$/i.test(f.name); })
+        .sort(function (a, b) { return a.name.localeCompare(b.name, 'zh-Hans-CN'); });
+      renderList();
+      setStatus('共 ' + files.length + ' 个文件', 'ok');
+    } catch (err) {
+      fileList.innerHTML = '<div class="side-title">加载失败</div>';
+      setStatus(err.message || String(err), 'fail');
+    }
+  }
+
+  function renderList() {
+    fileList.innerHTML = '';
+    if (!files.length) {
+      fileList.innerHTML = '<div class="side-title">暂无文章</div>';
+      return;
+    }
+    files.forEach(function (f) {
+      var btn = document.createElement('button');
+      btn.className = 'file-item' + (current && current.name === f.name ? ' active' : '');
+      btn.innerHTML = '<span>' + f.name + '</span><small>' + (f.size || 0) + ' B</small>';
+      btn.addEventListener('click', function () { loadFile(f.name); });
+      fileList.appendChild(btn);
+    });
+  }
+
+  async function loadFile(name) {
+    setStatus('正在加载 ' + name + ' …');
+    try {
+      var resp = await api('/contents/' + encodePath(DIR + '/' + name) + '?ref=' + BRANCH);
+      if (!resp.ok) throw new Error('加载失败（HTTP ' + resp.status + '）');
+      var data = await resp.json();
+      current = { name: name, sha: data.sha, isNew: false };
+      editorPane.style.display = 'flex';
+      emptyState.style.display = 'none';
+      filePathEl.textContent = DIR + '/' + name;
+      filePathEl.style.display = 'inline';
+      newNameInput.style.display = 'none';
+      editor.value = b64DecodeUtf8(data.content);
+      commitMsg.value = 'chore(post): 更新 ' + name;
+      btnDelete.disabled = false;
+      renderList();
+      setStatus('已加载 ' + name, 'ok');
+    } catch (err) {
+      setStatus(err.message || String(err), 'fail');
+    }
+  }
+
+  function newFile() {
+    current = { name: '', sha: null, isNew: true };
+    editorPane.style.display = 'flex';
+    emptyState.style.display = 'none';
+    filePathEl.textContent = DIR + '/';
+    filePathEl.style.display = 'inline';
+    newNameInput.style.display = 'inline-block';
+    newNameInput.value = new Date().toISOString().slice(0, 10) + '-new-post.md';
+    editor.value = [
+      '---',
+      'title: 未命名文章',
+      'date: ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ':00',
+      'categories:',
+      '  - 随笔',
+      'tags:',
+      '  - 随笔',
+      '---',
+      '',
+      ''
+    ].join('\n');
+    commitMsg.value = 'feat(post): 新增文章';
+    editor.focus();
+    renderList();
+    setStatus('新建文章（保存时将创建到 ' + DIR + '）');
+  }
+
+  /* ---------- 保存 / 删除 ---------- */
+  async function saveFile() {
+    if (!current) { setStatus('没有打开的文件', 'fail'); return; }
+    var content = editor.value;
+    if (!content.trim()) { setStatus('内容不能为空', 'fail'); return; }
+
+    var name = current.name;
+    if (current.isNew) {
+      name = newNameInput.value.trim();
+      if (!/^[^/\\]{1,200}\.md$/i.test(name)) {
+        setStatus('文件名需为 .md 结尾，且不含路径分隔符', 'fail');
+        return;
+      }
+    }
+    var message = (commitMsg.value || 'chore(post): 更新 ' + name).trim();
+
+    btnSave.disabled = true;
+    btnSave.textContent = '提交中…';
+    try {
+      var body = { message: message, content: b64EncodeUtf8(content), branch: BRANCH };
+      if (!current.isNew && current.sha) body.sha = current.sha;
+      var resp = await api('/contents/' + encodePath(DIR + '/' + name), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      var data = await resp.json().catch(function () { return {}; });
+      if (resp.status === 409) {
+        throw new Error('远程文件已被修改（HTTP 409），请刷新列表后重试');
+      }
+      if (resp.status === 403) {
+        throw new Error('没有写权限（HTTP 403）。令牌可能缺少 Contents: Read and write');
+      }
+      if (resp.status === 404) {
+        throw new Error('仓库或路径不存在（HTTP 404）：' + DIR + '/' + name);
+      }
+      if (!resp.ok) {
+        throw new Error('提交失败（HTTP ' + resp.status + '）' + (data.message ? '：' + data.message : ''));
+      }
+      current.name = name;
+      current.isNew = false;
+      current.sha = data.content && data.content.sha;
+      commitMsg.value = 'chore(post): 更新 ' + name;
+      setStatus('已提交到 ' + BRANCH + '（约 1–2 分钟后自动构建上线）', 'ok');
+      loadFiles();
+    } catch (err) {
+      setStatus(err.message || String(err), 'fail');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.textContent = '保存并提交';
+    }
+  }
+
+  async function deleteFile() {
+    if (!current || current.isNew) { setStatus('请先选择已存在的文件', 'fail'); return; }
+    if (!window.confirm('确定删除 ' + current.name + ' 吗？此操作会产生一次删除提交。')) return;
+    try {
+      var resp = await api('/contents/' + encodePath(DIR + '/' + current.name), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'chore(post): 删除 ' + current.name,
+          sha: current.sha,
+          branch: BRANCH
+        })
+      });
+      var data = await resp.json().catch(function () { return {}; });
+      if (!resp.ok) {
+        throw new Error('删除失败（HTTP ' + resp.status + '）' + (data.message ? '：' + data.message : ''));
+      }
+      setStatus('已删除 ' + current.name, 'ok');
+      current = null;
+      editor.value = '';
+      editorPane.style.display = 'none';
+      emptyState.style.display = 'flex';
+      loadFiles();
+    } catch (err) {
+      setStatus(err.message || String(err), 'fail');
+    }
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  btnConnect.addEventListener('click', function () { connect(); });
+  tokenInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') connect(); });
+  btnLogout.addEventListener('click', logout);
+  btnNew.addEventListener('click', newFile);
+  btnRefresh.addEventListener('click', loadFiles);
+  btnSave.addEventListener('click', saveFile);
+  btnDelete.addEventListener('click', deleteFile);
+
+  /* 快捷键：Ctrl/Cmd + S 保存 */
+  document.addEventListener('keydown', function (e) {
+    var mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      if (admin.style.display === 'flex') saveFile();
+    }
+  });
+
+  /* 自动登录（本会话已验证过的令牌） */
+  var saved = null;
+  try { saved = sessionStorage.getItem(TOKEN_KEY); } catch (e) { /* ignore */ }
+  if (saved) connect(saved);
+})();
+</script>
+</body>
+</html>
