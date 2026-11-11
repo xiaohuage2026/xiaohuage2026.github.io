@@ -56,12 +56,15 @@ blog/
 1. **站内编辑器**（`/editor/`，导航栏「编辑器」）：独立的单页应用（`source/editor/index.html`，原样复制不套用主题），
    左侧 Markdown 源码、右侧实时预览，支持 KaTeX 公式、代码块、表格、任务列表、自动保存（localStorage，刷新不丢）、
    字数统计、复制 / 下载 `.md`、同步滚动，暗色模式自适应。
-   下载后按 front-matter 保存为 `blog/source/_posts/xxx.md` 并提交即可发布。
-   （`marked` 已本地化到 `source/js/vendor/marked.min.js`，KaTeX 走 CDN。）
+   - 普通访客：写作后复制 / 下载 `.md` 即可，全程不落库；
+   - **管理员直传**：编辑器右上角「管理员登录」输入管理员密码（与 `/admin/` 共用同一个本地加密保险箱），
+     解锁后顶栏下方出现提交栏，点「保存并上传」即把当前内容提交到 `main`（自动构建，约 1–2 分钟上线）；
+   - 从文章页「在线编辑本文」进入时（`/editor/?file=_posts/xxx.md`），登录后自动载入该文章源码，保存即更新该文件。
 
 2. **文章末尾「在线编辑本文」按钮**（由 `scripts/online-edit.js` 在构建期注入，`source/css/custom.css` 美化）：
-   点击直达 GitHub 网页编辑器修改该文章 Markdown 源码，提交后重新构建即可更新站点。
-   按钮链接中的 `GITHUB_REPO` / `GITHUB_BRANCH` / `SOURCE_PREFIX` 在 `scripts/online-edit.js` 顶部配置。
+   点击在**博客内的编辑器**打开该文章的 Markdown 源码（`/editor/?file=...`）。
+   普通访客可写作、复制 / 下载；管理员登录后可直接把修改提交到仓库。
+   按钮构建逻辑在 `scripts/online-edit.js` 顶部。
 
 3. **管理员界面**（`/admin/`，导航栏「更多 → 管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 删除
    `blog/source/_posts/` 下的文章。**只有对仓库有写权限的 GitHub 账户（管理员 / 协作者）的令牌才能保存内容**；
