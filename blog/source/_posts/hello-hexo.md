@@ -23,7 +23,7 @@ tags:
 - Markdown 渲染：markdown-it（hexo-renderer-markdown-it）+ KaTeX 公式 + Mermaid 流程图 + 提示容器
 - 部署：GitHub Pages
 - 源码位置：本仓库的 `blog/` 目录
-- 编辑入口：导航栏「编辑器」（`/editor/`，可在线写作 + 预览 + 下载 / 复制），管理员登录后可直接提交到仓库
+- 编辑入口：导航栏「更多 → 编辑器」（`/editor/`，可在线写作 + 预览 + 下载 / 复制）；管理员可通过导航栏「管理」（`/admin/`，密码登录）在线编辑并直接提交
 
 ## 常用命令
 

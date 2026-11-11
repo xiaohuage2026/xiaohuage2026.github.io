@@ -304,9 +304,8 @@
   </footer>
 </main>
 
-<script src="/js/vendor/marked.min.js"></script>
+<script src="/js/vendor/blog-preview.min.js"></script>
 <script src="/vendor/katex/katex.min.js"></script>
-<script src="/vendor/katex/auto-render.min.js"></script>
 <script>
 (function () {
   'use strict';
@@ -388,10 +387,7 @@
     return p.split('/').map(encodeURIComponent).join('/');
   }
 
-  /* ---------- Markdown 实时预览 ---------- */
-  if (window.marked && marked.setOptions) {
-    marked.setOptions({ gfm: true, breaks: false });
-  }
+  /* ---------- Markdown 实时预览（BlogMarkdown 引擎，与站点一致） ---------- */
   function escapeHtmlLocal(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -401,24 +397,12 @@
       preview.innerHTML = '<div class="preview-empty">📝<br>选择文章或新建文章后<br>这里会显示 Markdown 实时预览</div>';
       return;
     }
-    var html;
     try {
-      html = window.marked ? marked.parse(src) : escapeHtmlLocal(src);
+      preview.innerHTML = window.BlogMarkdown
+        ? window.BlogMarkdown.render(src)
+        : '<pre>' + escapeHtmlLocal(src) + '</pre>';
     } catch (e) {
-      html = '<pre>' + escapeHtmlLocal(src) + '</pre>';
-    }
-    preview.innerHTML = html;
-    if (typeof renderMathInElement === 'function' && window.katex) {
-      try {
-        renderMathInElement(preview, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false }
-          ],
-          throwOnError: false,
-          ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-        });
-      } catch (e) { /* 公式渲染失败时保留原文 */ }
+      preview.innerHTML = '<pre>' + escapeHtmlLocal(src) + '</pre>';
     }
   }
   var previewTimer = null;
