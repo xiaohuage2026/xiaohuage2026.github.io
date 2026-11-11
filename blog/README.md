@@ -34,12 +34,10 @@ npx hexo clean && npx hexo generate
 blog/
 ├── _config.yml          # Hexo 站点配置（标题、URL、permalink、搜索等）
 ├── _config.fluid.yml    # Fluid 主题自定义配置（与主题默认配置合并）
-├── scripts/
-│   └── online-edit.js   # 「在线编辑本文」按钮注入脚本（构建期，详见下文）
 ├── scaffolds/           # 文章/页面模板
 ├── source/
 │   ├── _posts/          # 文章（Markdown）
-│   ├── css/custom.css   # 自定义样式（在线编辑按钮等）
+│   ├── css/custom.css   # 自定义样式（副标题小字、自定义容器等）
 │   ├── img/             # 图片资源（构建后为 /img/...）
 │   ├── about/           # 关于页
 │   ├── links/           # 友链页
@@ -54,20 +52,16 @@ blog/
 本站提供两种在线编辑方式：
 
 1. **站内编辑器**（`/editor/`，导航栏「编辑器」）：独立的单页应用（`source/editor/index.html`，原样复制不套用主题），
-   左侧 Markdown 源码、右侧实时预览，支持 KaTeX 公式、代码块、表格、任务列表、自动保存（localStorage，刷新不丢）、
-   字数统计、复制 / 下载 `.md`、同步滚动，暗色模式自适应。
+   左侧 Markdown 源码、右侧实时预览（150ms 去抖 + 同步滚动），支持 KaTeX 公式、代码块、表格、任务列表、
+   自动保存（localStorage，刷新不丢）、字数统计、复制 / 下载 `.md`，暗色模式自适应。
    - 普通访客：写作后复制 / 下载 `.md` 即可，全程不落库；
    - **管理员直传**：编辑器右上角「管理员登录」输入管理员密码（与 `/admin/` 共用同一个本地加密保险箱），
      解锁后顶栏下方出现提交栏，点「保存并上传」即把当前内容提交到 `main`（自动构建，约 1–2 分钟上线）；
-   - 从文章页「在线编辑本文」进入时（`/editor/?file=_posts/xxx.md`），登录后自动载入该文章源码，保存即更新该文件。
+   - 深链 `/editor/?file=_posts/xxx.md` 可让登录后的管理员直接载入该文章源码，保存即更新该文件（无按钮入口，可手动使用或收藏）。
 
-2. **文章末尾「在线编辑本文」按钮**（由 `scripts/online-edit.js` 在构建期注入，`source/css/custom.css` 美化）：
-   点击在**博客内的编辑器**打开该文章的 Markdown 源码（`/editor/?file=...`）。
-   普通访客可写作、复制 / 下载；管理员登录后可直接把修改提交到仓库。
-   按钮构建逻辑在 `scripts/online-edit.js` 顶部。
-
-3. **管理员界面**（`/admin/`，导航栏「更多 → 管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 删除
-   `blog/source/_posts/` 下的文章。**只有对仓库有写权限的 GitHub 账户（管理员 / 协作者）的令牌才能保存内容**；
+2. **管理员界面**（`/admin/`，导航栏「更多 → 管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 删除
+   `blog/source/_posts/` 下的文章。编辑框右侧为 **Markdown 实时预览**（与 `/editor/` 同款：marked + KaTeX，
+   150ms 去抖渲染、暗色自适应）。**只有对仓库有写权限的 GitHub 账户（管理员 / 协作者）的令牌才能保存内容**；
    其他访客没有令牌，任何修改请求都会被 GitHub 拒绝。
    - 令牌建议使用 Fine-grained PAT，仅勾选本仓库的 `Contents: Read and write`；
    - 首次使用需「设置管理员密码」：令牌用该密码通过 PBKDF2（25 万次迭代）派生密钥后以 AES-256-GCM 加密，

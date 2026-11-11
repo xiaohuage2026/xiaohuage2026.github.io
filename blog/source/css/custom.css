@@ -13,14 +13,6 @@
   .banner-subtitle-small { font-size: 0.75rem; letter-spacing: 0.25em; text-indent: 0.25em; margin-top: 0.4rem; }
 }
 
-/* 自定义样式：在线编辑按钮 */
-.online-edit {
-  margin: 2rem 0 0.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px dashed #eaecef;
-  text-align: center;
-}
-
 /* 容器（markdown-it-container） */
 .custom-block {
   margin: 1em 0;
@@ -53,52 +45,3 @@
 [data-user-color-scheme="dark"] .custom-block-danger { background: rgba(245, 108, 108, 0.08); border-left-color: #f56c6c; color: #f3a3a3; }
 [data-user-color-scheme="dark"] .custom-block .custom-block-title { color: inherit; opacity: 0.85; }
 
-.online-edit__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 1.4rem;
-  border: 1px solid #2f4154;
-  border-radius: 2rem;
-  color: #2f4154;
-  font-size: 0.95rem;
-  text-decoration: none;
-  background: transparent;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.online-edit__btn:hover {
-  background: #2f4154;
-  color: #fff;
-  text-decoration: none;
-}
-
-.online-edit__icon {
-  font-size: 1.05rem;
-}
-
-.online-edit__tip {
-  display: block;
-  margin-top: 0.4rem;
-  font-size: 0.75rem;
-  color: #718096;
-}
-
-/* 暗色模式 */
-[data-user-color-scheme="dark"] .online-edit {
-  border-top-color: #435266;
-}
-
-[data-user-color-scheme="dark"] .online-edit__btn {
-  border-color: #7aa2c4;
-  color: #7aa2c4;
-}
-
-[data-user-color-scheme="dark"] .online-edit__btn:hover {
-  background: #7aa2c4;
-  color: #181c27;
-}
-
-[data-user-color-scheme="dark"] .online-edit__tip {
-  color: #a7a9ad;
-}
