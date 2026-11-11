@@ -490,7 +490,7 @@
 <li>Markdown 渲染：markdown-it（hexo-renderer-markdown-it）+ <abbr title="基于 TeX 的数学公式渲染库">KaTeX</abbr> 公式 + Mermaid 流程图 + 提示容器</li>
 <li>部署：GitHub Pages</li>
 <li>源码位置：本仓库的 <code>blog/</code> 目录</li>
-<li>编辑入口：导航栏「编辑器」（<code>/editor/</code>，可在线写作 + 预览 + 下载 / 复制），文章末尾「在线编辑本文」按钮在博客内编辑器中打开本文章（管理员登录后可直接提交到仓库，自动构建上线）</li>
+<li>编辑入口：导航栏「编辑器」（<code>/editor/</code>，可在线写作 + 预览 + 下载 / 复制），管理员登录后可直接提交到仓库</li>
 </ul>
 <h2 id="常用命令">常用命令</h2>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 创建一篇新文章</span><br>npx hexo new post <span class="hljs-string">&quot;文章标题&quot;</span><br><br><span class="hljs-comment"># 创建一个新页面</span><br>npx hexo new page pagename<br><br><span class="hljs-comment"># 本地预览（http://localhost:4000）</span><br>npx hexo server<br><br><span class="hljs-comment"># 生成静态文件到 public/</span><br>npx hexo clean &amp;&amp; npx hexo generate<br></code></pre></td></tr></table></figure>
@@ -739,13 +739,6 @@ sequenceDiagram
 </ol>
 </section>
 
-<div class="online-edit">
-  <a class="online-edit__btn" href="/editor/?file=_posts%2Fhello-hexo.md" title="在博客编辑器中打开此文（管理员登录后可直接提交到仓库）">
-    <span class="online-edit__icon">✏️</span>
-    <span>在线编辑本文</span>
-  </a>
-  <span class="online-edit__tip">管理员解锁后保存即提交到仓库，自动构建上线</span>
-</div>
                 
               </div>
             
