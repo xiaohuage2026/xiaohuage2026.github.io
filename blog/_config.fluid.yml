@@ -14,6 +14,7 @@ navbar:
     - { key: "home", link: "/", icon: "iconfont icon-home-fill" }
     - { key: "archive", link: "/archives/", icon: "iconfont icon-archive-fill" }
     - { key: "about", link: "/about/", icon: "iconfont icon-user-fill" }
+    - { key: "admin", link: "/admin/", name: "管理" }
     - key: more
       name: 更多
       submenu:
@@ -21,7 +22,6 @@ navbar:
         - { key: "tag", link: "/tags/", icon: "iconfont icon-tags-fill" }
         - { key: "links", link: "/links/", icon: "iconfont icon-link-fill" }
         - { key: "editor", link: "/editor/", name: "编辑器" }
-        - { key: "admin", link: "/admin/", name: "管理" }
 
 # 搜索（基于 hexo-generator-searchdb，已在 _config.yml 中配置索引文件）
 search:

@@ -161,6 +161,18 @@
           
           
           
+            <li class="nav-item">
+              <a class="nav-link" href="/admin/" target="_self">
+                
+                <span>管理</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" target="_self" href="javascript:;" role="button"
                  data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -199,14 +211,6 @@
                   <a class="dropdown-item" href="/editor/" target="_self">
                     
                     <span>编辑器</span>
-                  </a>
-                
-                  
-                  
-                  
-                  <a class="dropdown-item" href="/admin/" target="_self">
-                    
-                    <span>管理</span>
                   </a>
                 
               </div>
@@ -285,6 +289,20 @@
           
           
           
+            <div class="col-4 mobile-grid-cell">
+              <a href="/admin/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-link-fill"></i>
+                  <span>管理</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
             
             <div class="col-12 mobile-grid-group-header">
               
@@ -335,18 +353,6 @@
                   <div class="mobile-grid-item">
                     <i class="iconfont icon-link-fill"></i>
                     <span>编辑器</span>
-                  </div>
-                </a>
-              </div>
-            
-              
-              
-              
-              <div class="col-4 mobile-grid-cell">
-                <a href="/admin/" target="_self">
-                  <div class="mobile-grid-item">
-                    <i class="iconfont icon-link-fill"></i>
-                    <span>管理</span>
                   </div>
                 </a>
               </div>
@@ -490,7 +496,7 @@
 <li>Markdown 渲染：markdown-it（hexo-renderer-markdown-it）+ <abbr title="基于 TeX 的数学公式渲染库">KaTeX</abbr> 公式 + Mermaid 流程图 + 提示容器</li>
 <li>部署：GitHub Pages</li>
 <li>源码位置：本仓库的 <code>blog/</code> 目录</li>
-<li>编辑入口：导航栏「编辑器」（<code>/editor/</code>，可在线写作 + 预览 + 下载 / 复制），管理员登录后可直接提交到仓库</li>
+<li>编辑入口：导航栏「更多 → 编辑器」（<code>/editor/</code>，可在线写作 + 预览 + 下载 / 复制）；管理员可通过导航栏「管理」（<code>/admin/</code>，密码登录）在线编辑并直接提交</li>
 </ul>
 <h2 id="常用命令">常用命令</h2>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs bash"><span class="hljs-comment"># 创建一篇新文章</span><br>npx hexo new post <span class="hljs-string">&quot;文章标题&quot;</span><br><br><span class="hljs-comment"># 创建一个新页面</span><br>npx hexo new page pagename<br><br><span class="hljs-comment"># 本地预览（http://localhost:4000）</span><br>npx hexo server<br><br><span class="hljs-comment"># 生成静态文件到 public/</span><br>npx hexo clean &amp;&amp; npx hexo generate<br></code></pre></td></tr></table></figure>

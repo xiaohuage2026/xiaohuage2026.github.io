@@ -142,72 +142,6 @@
     .preview ins { text-decoration: underline; }
     .preview .katex-display { margin: .8em 0; overflow-x: auto; overflow-y: hidden; padding: .2em 0; }
 
-    /* ===== 管理员直传栏 ===== */
-    .upload-bar {
-      flex: 0 0 auto; min-height: 42px; display: flex; align-items: center; gap: 10px;
-      padding: 5px 12px; background: var(--panel); border-bottom: 1px solid var(--border);
-      border-left: 3px solid #e6a23c; flex-wrap: wrap; font-size: 13px;
-    }
-    .upload-bar .path {
-      color: var(--text-sec); font-family: "SF Mono", Consolas, Menlo, monospace; font-size: 12px;
-      max-width: 36%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .upload-bar input[type="text"] {
-      flex: 1; min-width: 140px; height: 30px; padding: 0 10px; font-size: 13px;
-      border: 1px solid var(--border); border-radius: 4px; outline: none;
-      background: var(--bg); color: var(--text); font-family: inherit;
-    }
-    .upload-bar input[type="text"]:focus { border-color: var(--accent); }
-    .upload-btn {
-      height: 30px; padding: 0 14px; font-size: 13px; font-weight: 600; cursor: pointer;
-      background: #1a7f37; color: #fff; border: none; border-radius: 4px; white-space: nowrap;
-    }
-    .upload-btn:hover { background: #22863a; }
-    .upload-btn:disabled { opacity: .6; cursor: wait; }
-    .ghost-btn {
-      height: 30px; padding: 0 10px; font-size: 12px; cursor: pointer;
-      background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--text-sec);
-      font-family: inherit; white-space: nowrap;
-    }
-    .ghost-btn:hover { color: #dc2626; border-color: #dc2626; }
-    .filename:disabled { opacity: .6; cursor: not-allowed; }
-    .admin-badge {
-      font-size: 11px; padding: 3px 10px; border-radius: 10px; white-space: nowrap;
-      background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.4); color: #fff;
-    }
-
-    /* ===== 管理员登录弹层 ===== */
-    .modal-backdrop {
-      position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.45);
-      display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-card {
-      width: min(440px, 100%); background: var(--panel); border: 1px solid var(--border);
-      border-radius: 10px; padding: 22px 24px; box-shadow: 0 12px 40px rgba(0,0,0,.35);
-    }
-    .modal-card h3 { margin: 0 0 8px; font-size: 17px; color: var(--text); }
-    .modal-card p { margin: 0 0 12px; font-size: 13px; color: var(--text-sec); line-height: 1.7; }
-    .modal-card input {
-      width: 100%; height: 38px; padding: 0 12px; font-size: 14px; margin-bottom: 10px;
-      border: 1px solid var(--border); border-radius: 6px; outline: none;
-      background: var(--bg); color: var(--text); font-family: inherit;
-    }
-    .modal-card input:focus { border-color: var(--accent); }
-    .modal-error { display: none; font-size: 12.5px; color: #dc2626; margin: 0 0 10px; line-height: 1.6; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-    .btn-primary-dark {
-      height: 32px; padding: 0 16px; font-size: 13px; font-weight: 600; cursor: pointer;
-      border: none; border-radius: 4px; background: var(--primary); color: #fff; font-family: inherit;
-    }
-    .btn-primary-dark:hover { background: var(--primary-hover); }
-    .btn-primary-dark:disabled { opacity: .6; cursor: wait; }
-    .btn-cancel {
-      height: 32px; padding: 0 14px; font-size: 13px; cursor: pointer; font-family: inherit;
-      border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--text-sec);
-    }
-    .modal-hint { margin-top: 12px !important; font-size: 12px !important; }
-    .modal-hint a { color: var(--accent); }
-
     /* ===== 状态栏 ===== */
     .statusbar {
       flex: 0 0 30px; display: flex; align-items: center; gap: 18px;
@@ -226,12 +160,9 @@
   <span class="title">博客在线编辑器</span>
   <div class="spacer"></div>
   <div class="actions">
-    <input class="filename" id="filename" value="new-post.md" title="下载时使用的文件名（管理员直传文章时锁定为仓库文件名）" spellcheck="false">
+    <input class="filename" id="filename" value="new-post.md" title="下载时使用的文件名" spellcheck="false">
     <button class="btn" id="btn-copy" title="复制全部 Markdown 到剪贴板">复制</button>
     <button class="btn" id="btn-download" title="下载为 .md 文件">下载 .md</button>
-    <button class="btn" id="btn-admin-login" title="管理员登录后可把当前内容直接提交到 GitHub 仓库">管理员登录</button>
-    <span class="admin-badge" id="admin-badge" style="display:none">管理员 · <span id="admin-who"></span></span>
-    <a class="btn primary" id="btn-github" href="https://github.com/xiaohuage2026/xiaohuage2026.github.io/tree/main/blog/source/_posts" target="_blank" rel="noopener" title="打开 GitHub 上的文章目录">GitHub 目录</a>
   </div>
 </header>
 
@@ -264,13 +195,6 @@
   <button data-cmd="clear" title="清空编辑器（会先确认）">清空</button>
 </div>
 
-<div class="upload-bar" id="upload-bar" style="display:none">
-  <span class="path" id="upload-path">blog/source/_posts/…</span>
-  <input type="text" id="commit-msg" placeholder="提交信息，例如：chore(post): 更新《你好，Hexo！》" spellcheck="false">
-  <button class="upload-btn" id="btn-upload" title="提交到 main 分支；约 1–2 分钟后自动构建上线">保存并上传</button>
-  <button class="ghost-btn" id="btn-admin-logout" title="退出管理员模式（编辑内容保留在本浏览器）">退出管理</button>
-</div>
-
 <main class="workspace">
   <textarea id="input" spellcheck="false" placeholder="在这里用 Markdown 写作……&#10;&#10;支持：标题 / 表格 / 任务列表 / 脚注 / ==高亮== / KaTeX 公式 $E=mc^2$&#10;内容会自动保存到浏览器 localStorage，刷新不丢失。"></textarea>
   <div id="preview" class="preview" aria-label="预览"></div>
@@ -283,23 +207,8 @@
   <span>Markdown + KaTeX · 自动保存在本浏览器</span>
 </footer>
 
-<div class="modal-backdrop" id="admin-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="admin-modal-title">
-  <div class="modal-card">
-    <h3 id="admin-modal-title">🔒 管理员登录</h3>
-    <p>输入管理员密码，解锁本浏览器加密保存的 GitHub 令牌（与 <code>/admin/</code> 页面共用同一保险箱，PBKDF2 25 万次 + AES-256-GCM）。解锁后向 GitHub 校验写权限，即可把当前内容直接提交到仓库。</p>
-    <input type="password" id="admin-password" placeholder="管理员密码" autocomplete="current-password" spellcheck="false">
-    <div class="modal-error" id="admin-modal-error"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" id="btn-modal-cancel">取消</button>
-      <button class="btn-primary-dark" id="btn-modal-unlock">解锁</button>
-    </div>
-    <p class="modal-hint" id="admin-modal-hint" style="display:none">本浏览器尚未设置管理员凭据：请先到 <a href="/admin/">/admin/ 管理页</a> 粘贴 Fine-grained Token（Contents: Read and write）并设置管理员密码。</p>
-  </div>
-</div>
-
-<script src="/js/vendor/marked.min.js"></script>
+<script src="/js/vendor/blog-preview.min.js"></script>
 <script src="/vendor/katex/katex.min.js"></script>
-<script src="/vendor/katex/auto-render.min.js"></script>
 <script>
 (function () {
   'use strict';
@@ -333,25 +242,6 @@
   ].join('\n');
 
   /* ---------- 渲染 ---------- */
-  if (window.marked && marked.setOptions) {
-    marked.setOptions({ gfm: true, breaks: false });
-  }
-
-  function renderMath() {
-    if (typeof renderMathInElement === 'function' && window.katex) {
-      try {
-        renderMathInElement(preview, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false }
-          ],
-          throwOnError: false,
-          ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-        });
-      } catch (e) { /* 公式渲染失败时保留原文 */ }
-    }
-  }
-
   var renderTimer = null;
   function scheduleRender() {
     clearTimeout(renderTimer);
@@ -363,12 +253,11 @@
     var src = input.value;
     var html;
     try {
-      html = window.marked ? marked.parse(src) : escapeHtml(src);
+      html = window.BlogMarkdown ? window.BlogMarkdown.render(src) : escapeHtml(src);
     } catch (e) {
       html = '<pre>' + escapeHtml(src) + '</pre>';
     }
     preview.innerHTML = html;
-    renderMath();
     updateWordCount(src);
     save();
   }
@@ -537,300 +426,10 @@
 
   input.addEventListener('input', scheduleRender);
 
-  /* ---------- 管理员模式：站内直接上传到 GitHub ---------- */
-  var GH_OWNER = 'xiaohuage2026';
-  var GH_REPO = 'xiaohuage2026.github.io';
-  var GH_BRANCH = 'main';
-  var SRC_PREFIX = 'blog/source/';
-  var GH_API = 'https://api.github.com/repos/' + GH_OWNER + '/' + GH_REPO;
-  var VAULT_KEY = 'admin_vault_v1';
-
-  /* file 参数 = 源码相对路径（相对 blog/source/，如 _posts/2026-11-09-hello-hexo.md） */
-  var urlFile = null;
-  try { urlFile = new URLSearchParams(location.search).get('file'); } catch (e) { urlFile = null; }
-  urlFile = urlFile ? String(urlFile).replace(/\\/g, '/').replace(/^\/+/, '') : null;
-  var remoteMode = !!(urlFile && /\.md$/i.test(urlFile) && urlFile.indexOf('..') === -1 && urlFile.indexOf('/source/') === -1);
-  var remotePath = remoteMode ? SRC_PREFIX + urlFile : null;
-
-  var adminToken = null;
-  var remoteSha = null;
-
-  var btnAdminLogin = document.getElementById('btn-admin-login');
-  var adminBadge = document.getElementById('admin-badge');
-  var adminWho = document.getElementById('admin-who');
-  var uploadBar = document.getElementById('upload-bar');
-  var uploadPath = document.getElementById('upload-path');
-  var commitMsg = document.getElementById('commit-msg');
-  var btnUpload = document.getElementById('btn-upload');
-  var btnAdminLogout = document.getElementById('btn-admin-logout');
-  var adminModal = document.getElementById('admin-modal');
-  var adminPassword = document.getElementById('admin-password');
-  var adminModalError = document.getElementById('admin-modal-error');
-  var btnModalUnlock = document.getElementById('btn-modal-unlock');
-  var btnModalCancel = document.getElementById('btn-modal-cancel');
-  var adminModalHint = document.getElementById('admin-modal-hint');
-
-  function b64ToBytes(b64) {
-    var bin = atob(String(b64).replace(/\s/g, ''));
-    var bytes = new Uint8Array(bin.length);
-    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
-  }
-  function bytesToB64(bytes) {
-    var bin = '';
-    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-    return btoa(bin);
-  }
-  function b64DecodeUtf8(str) {
-    return new TextDecoder('utf-8').decode(b64ToBytes(str));
-  }
-  function b64EncodeUtf8(str) {
-    return bytesToB64(new TextEncoder().encode(str));
-  }
-  function encodePath(p) {
-    return p.split('/').map(encodeURIComponent).join('/');
-  }
-  function getVault() {
-    try {
-      var raw = localStorage.getItem(VAULT_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
-  }
-  async function deriveDecryptKey(password, salt) {
-    var base = await crypto.subtle.importKey(
-      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
-    return crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: salt, iterations: 250000, hash: 'SHA-256' },
-      base,
-      { name: 'AES-GCM', length: 256 },
-      false, ['decrypt']);
-  }
-  async function decryptVaultToken(password) {
-    var vault = getVault();
-    if (!vault) { var err = new Error('NO_VAULT'); err.code = 'NO_VAULT'; throw err; }
-    var key = await deriveDecryptKey(password, b64ToBytes(vault.salt));
-    var pt = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: b64ToBytes(vault.iv) }, key, b64ToBytes(vault.ct));
-    return new TextDecoder('utf-8').decode(pt);
-  }
-  function setStatus(msg) {
-    saveState.textContent = msg;
-  }
-  function ghHeaders() {
-    return {
-      'Authorization': 'Bearer ' + adminToken,
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28'
-    };
-  }
-  async function verifyPushPermission(candidateToken) {
-    var resp = await fetch(GH_API, {
-      headers: {
-        'Authorization': 'Bearer ' + candidateToken,
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
-    });
-    if (resp.status === 401) throw new Error('令牌无效或已过期（HTTP 401），请到 /admin/ 重新设置');
-    if (resp.status === 404) throw new Error('令牌无法访问仓库（HTTP 404）');
-    if (!resp.ok) throw new Error('GitHub 返回 HTTP ' + resp.status);
-    var repo = await resp.json();
-    if (!repo.permissions || !repo.permissions.push) {
-      throw new Error('该账户对仓库没有写权限，不能上传');
-    }
-    var userResp = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization': 'Bearer ' + candidateToken, 'Accept': 'application/vnd.github+json' }
-    });
-    var user = userResp.ok ? await userResp.json() : { login: 'unknown' };
-    return user.login;
-  }
-
-  function openModal() {
-    adminModal.style.display = 'flex';
-    adminModalError.style.display = 'none';
-    adminModalHint.style.display = getVault() ? 'none' : 'block';
-    adminPassword.value = '';
-    setTimeout(function () { adminPassword.focus(); }, 30);
-  }
-  function closeModal() {
-    adminModal.style.display = 'none';
-  }
-  function showModalError(msg) {
-    adminModalError.style.display = 'block';
-    adminModalError.textContent = msg;
-  }
-
-  function normalizeTargetName() {
-    var n = (filenameInput.value || 'new-post.md').trim();
-    if (!/\.md(own|ark)?$/i.test(n)) n += '.md';
-    return n;
-  }
-  function syncUploadPath() {
-    if (!remoteMode) {
-      uploadPath.textContent = SRC_PREFIX + '_posts/' + normalizeTargetName();
-    }
-  }
-  function enterUploadMode() {
-    uploadBar.style.display = 'flex';
-    if (remoteMode) {
-      var name = urlFile.split('/').pop();
-      uploadPath.textContent = remotePath;
-      filenameInput.value = name;
-      filenameInput.disabled = true;
-      commitMsg.value = 'chore(post): 更新 ' + name;
-    } else {
-      filenameInput.disabled = false;
-      filenameInput.addEventListener('input', syncUploadPath);
-      uploadPath.textContent = SRC_PREFIX + '_posts/' + normalizeTargetName();
-      commitMsg.value = 'feat(post): 新增 ' + normalizeTargetName();
-    }
-  }
-
-  async function loadRemoteFile() {
-    setStatus('正在从仓库载入 ' + remotePath + ' …');
-    try {
-      var resp = await fetch(GH_API + '/contents/' + encodePath(remotePath) + '?ref=' + GH_BRANCH, {
-        headers: ghHeaders()
-      });
-      if (!resp.ok) throw new Error('载入失败（HTTP ' + resp.status + '）');
-      var data = await resp.json();
-      remoteSha = data.sha;
-      var draft = input.value;
-      if (draft && draft.trim() && draft.trim() !== TEMPLATE.trim() && !window.confirm('当前编辑器中有内容（可能是本地草稿），确定载入仓库中的文件并覆盖？')) {
-        setStatus('已取消载入（保留当前内容）');
-        return;
-      }
-      input.value = b64DecodeUtf8(data.content);
-      render();
-      setStatus('已从仓库载入 ' + remotePath);
-    } catch (err) {
-      setStatus(err.message || String(err));
-    }
-  }
-
-  async function unlock(password) {
-    if (!password) { showModalError('请输入管理员密码'); return; }
-    btnModalUnlock.disabled = true;
-    btnModalUnlock.textContent = '解锁中…';
-    try {
-      var plainToken;
-      try {
-        plainToken = await decryptVaultToken(password);
-      } catch (e) {
-        if (e && e.code === 'NO_VAULT') {
-          throw new Error('本浏览器尚未设置管理员凭据，请先到 /admin/ 完成首次设置');
-        }
-        throw new Error('密码错误，无法解密本地凭据（可到 /admin/ 重新设置）');
-      }
-      var login = await verifyPushPermission(plainToken);
-      adminToken = plainToken;
-      adminWho.textContent = login;
-      btnAdminLogin.style.display = 'none';
-      adminBadge.style.display = 'inline-flex';
-      closeModal();
-      enterUploadMode();
-      setStatus('管理员已登录：' + login + (remoteMode ? '，正在载入文章…' : ''));
-      if (remoteMode) loadRemoteFile();
-    } catch (err) {
-      showModalError((err && err.message) || String(err));
-    } finally {
-      btnModalUnlock.disabled = false;
-      btnModalUnlock.textContent = '解锁';
-    }
-  }
-
-  function adminLogout() {
-    adminToken = null;
-    remoteSha = null;
-    uploadBar.style.display = 'none';
-    adminBadge.style.display = 'none';
-    btnAdminLogin.style.display = 'inline-flex';
-    filenameInput.disabled = false;
-    setStatus('已退出管理员模式（编辑内容保留在本浏览器）');
-  }
-
-  function targetPath() {
-    return remoteMode ? remotePath : SRC_PREFIX + '_posts/' + normalizeTargetName();
-  }
-
-  async function saveAndUpload() {
-    if (!adminToken) { setStatus('请先登录管理员'); return; }
-    var path = targetPath();
-    var content = input.value;
-    if (!content.trim()) { setStatus('内容不能为空'); return; }
-    var message = (commitMsg.value || '').trim() || ('chore(post): 更新 ' + path.split('/').pop());
-    btnUpload.disabled = true;
-    btnUpload.textContent = '提交中…';
-    try {
-      var sha = remoteMode ? remoteSha : null;
-      if (!sha && !remoteMode) {
-        /* 新文章：若目标已存在则获取 sha，改为更新；否则创建 */
-        var check = await fetch(GH_API + '/contents/' + encodePath(path) + '?ref=' + GH_BRANCH, {
-          headers: ghHeaders()
-        });
-        if (check.ok) { sha = (await check.json()).sha; }
-        else if (check.status !== 404) {
-          throw new Error('检查目标文件失败（HTTP ' + check.status + '）');
-        }
-      }
-      var body = {
-        message: message,
-        content: b64EncodeUtf8(content),
-        branch: GH_BRANCH
-      };
-      if (sha) body.sha = sha;
-      var resp = await fetch(GH_API + '/contents/' + encodePath(path), {
-        method: 'PUT',
-        headers: Object.assign(ghHeaders(), { 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body)
-      });
-      var data = await resp.json().catch(function () { return {}; });
-      if (resp.status === 409) throw new Error('远程文件已被修改（HTTP 409），请刷新页面后重试');
-      if (resp.status === 403) throw new Error('没有写权限（HTTP 403），令牌可能缺少 Contents: Read and write');
-      if (resp.status === 422) throw new Error('提交被拒绝（HTTP 422）：' + (data.message || '可能是 sha 过期，请刷新重试'));
-      if (!resp.ok) throw new Error('提交失败（HTTP ' + resp.status + '）' + (data.message ? '：' + data.message : ''));
-      remoteSha = (data.content && data.content.sha) || sha;
-      remoteMode = true;
-      remotePath = path;
-      filenameInput.value = path.split('/').pop();
-      filenameInput.disabled = true;
-      uploadPath.textContent = path;
-      setStatus('已提交到 ' + GH_BRANCH + '：' + message + '（约 1–2 分钟后自动上线）');
-    } catch (err) {
-      setStatus((err && err.message) || String(err));
-    } finally {
-      btnUpload.disabled = false;
-      btnUpload.textContent = '保存并上传';
-    }
-  }
-
-  btnAdminLogin.addEventListener('click', openModal);
-  btnModalCancel.addEventListener('click', closeModal);
-  adminModal.addEventListener('click', function (e) {
-    if (e.target === adminModal) closeModal();
-  });
-  btnModalUnlock.addEventListener('click', function () { unlock(adminPassword.value); });
-  adminPassword.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') unlock(adminPassword.value);
-  });
-  btnUpload.addEventListener('click', saveAndUpload);
-  btnAdminLogout.addEventListener('click', adminLogout);
-  /* Ctrl/Cmd+S：管理员模式下直接上传 */
-  document.addEventListener('keydown', function (e) {
-    var mod = e.ctrlKey || e.metaKey;
-    if (mod && (e.key || '').toLowerCase() === 's' && adminToken) {
-      e.preventDefault();
-      saveAndUpload();
-    }
-  });
-
   /* ---------- 初始化 ---------- */
   var saved = null;
   try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignore */ }
   input.value = (saved !== null && saved !== '') ? saved : TEMPLATE;
-  if (remoteMode) {
-    saveState.textContent = '文章编辑模式：点击右上角「管理员登录」后即可载入并直接提交修改';
-  }
   render();
 })();
 </script>
