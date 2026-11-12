@@ -1,0 +1,6 @@
+# 旧地址 → 新地址 跳转表（文章改名后由 /admin/ 的「改名」功能自动维护，也可手动添加）
+# 每行一条：
+#   - { from: "/2026/11/09/old-name/", to: "/2026/11/09/new-name/" }
+# 构建时 scripts/redirects.js 会为每条记录生成 from/index.html 跳转页
+# （meta refresh + canonical + JS location.replace），旧链接自动跳转到新地址。
+# from 末尾斜杠可写可不写。
