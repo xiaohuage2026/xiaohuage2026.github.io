@@ -61,11 +61,13 @@ blog/
    --minify --format=iife --outfile=source/js/vendor/blog-preview.min.js`）。
    全程纯本地写作，复制 / 下载 `.md` 后即可走正常发布流程，不落库。
 
-2. **管理员界面**（`/admin/`，导航栏「管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 删除
+2. **管理员界面**（`/admin/`，导航栏「管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 改名 / 删除
    `blog/source/_posts/` 下的文章。编辑框右侧为 **Markdown 实时预览**（与 `/editor/` 同款 BlogMarkdown 引擎：
    markdown-it + texmath + KaTeX + 自定义容器，150ms 去抖、暗色自适应）。
    **只有对仓库有写权限的 GitHub 账户（管理员 / 协作者）的令牌才能保存内容**；
    其他访客没有令牌，任何修改请求都会被 GitHub 拒绝。
+   - **改名**：「改名」按钮输入新文件名后两步完成（先按当前编辑器内容创建新文件，再删除旧文件），
+     编辑器里未保存的修改会一并带入新文件；文件名即 URL（`/年/月/日/文件名/`），改名后旧链接将 404；
    - 令牌建议使用 Fine-grained PAT，仅勾选本仓库的 `Contents: Read and write`；
    - 首次使用需「设置管理员密码」：令牌用该密码通过 PBKDF2（25 万次迭代）派生密钥后以 AES-256-GCM 加密，
      仅保存在本浏览器 localStorage；之后用密码登录（解锁），令牌只解密进内存，关闭标签页即销毁；
