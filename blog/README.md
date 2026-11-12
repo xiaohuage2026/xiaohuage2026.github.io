@@ -35,9 +35,12 @@ blog/
 ├── _config.yml          # Hexo 站点配置（标题、URL、permalink、搜索等）
 ├── _config.fluid.yml    # Fluid 主题自定义配置（与主题默认配置合并）
 ├── scaffolds/           # 文章/页面模板
+├── scripts/
+│   └── redirects.js     # 旧地址 → 新地址 静态跳转页生成器（构建期）
 ├── lib/                 # 站点构建期/打包期脚本（如 markdown-it 容器插件、预览引擎入口）
 ├── source/
 │   ├── _posts/          # 文章（Markdown）
+│   ├── _data/           # 数据文件（redirects.yml 旧地址跳转表，admin 改名时自动维护）
 │   ├── css/custom.css   # 自定义样式（副标题小字、自定义容器等）
 │   ├── js/vendor/       # 本地化前端资源（blog-preview.min.js 预览引擎等）
 │   ├── img/             # 图片资源（构建后为 /img/...）
@@ -66,8 +69,13 @@ blog/
    markdown-it + texmath + KaTeX + 自定义容器，150ms 去抖、暗色自适应）。
    **只有对仓库有写权限的 GitHub 账户（管理员 / 协作者）的令牌才能保存内容**；
    其他访客没有令牌，任何修改请求都会被 GitHub 拒绝。
-   - **改名**：「改名」按钮输入新文件名后两步完成（先按当前编辑器内容创建新文件，再删除旧文件），
-     编辑器里未保存的修改会一并带入新文件；文件名即 URL（`/年/月/日/文件名/`），改名后旧链接将 404；
+   - **改名**：「改名」按钮输入新文件名后分步完成（① 检查目标不存在 → ② 按当前编辑器内容创建新文件 →
+     ③ 删除旧文件 → ④ 自动登记 旧地址 → 新地址 跳转到 `source/_data/redirects.yml`）。
+     编辑器里未保存的修改会一并写入新文件；**front-matter 的 `date` 逐字保留**（归档归类与排序不变）。
+     旧地址不再 404：构建时 `scripts/redirects.js` 会为每条跳转记录生成 `旧地址/index.html`
+     （meta refresh + canonical + JS `location.replace`），访问旧链接自动跳转到新文章。
+     归档页（`/archives/`、年/月页、分类/标签页）与 `local-search.xml` 由随后触发的自动构建刷新为新地址。
+     若用 git 手动改名，请手动在 `redirects.yml` 追加一条 `- { from: "/旧/", to: "/新/" }`；
    - 令牌建议使用 Fine-grained PAT，仅勾选本仓库的 `Contents: Read and write`；
    - 首次使用需「设置管理员密码」：令牌用该密码通过 PBKDF2（25 万次迭代）派生密钥后以 AES-256-GCM 加密，
      仅保存在本浏览器 localStorage；之后用密码登录（解锁），令牌只解密进内存，关闭标签页即销毁；

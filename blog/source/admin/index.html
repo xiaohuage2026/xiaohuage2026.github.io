@@ -290,7 +290,7 @@
       <div class="action-bar">
         <input type="text" id="commit-msg" placeholder="提交信息，例如：chore(post): 修改《你好，Hexo！》">
         <button class="btn-save" id="btn-save">保存并提交</button>
-        <button class="btn-rename" id="btn-rename" title="修改文章文件名（会改变文章 URL）">改名</button>
+        <button class="btn-rename" id="btn-rename" title="修改文章文件名（front-matter 日期保留，旧地址自动跳转到新地址）">改名</button>
         <button class="btn-delete" id="btn-delete">删除</button>
       </div>
     </section>
@@ -318,6 +318,7 @@
   var REPO = 'xiaohuage2026.github.io';
   var BRANCH = 'main';
   var DIR = 'blog/source/_posts';
+  var REDIR_PATH = 'blog/source/_data/redirects.yml';
   var API = 'https://api.github.com/repos/' + OWNER + '/' + REPO;
   var VAULT_KEY = 'admin_vault_v1';
 
@@ -390,6 +391,57 @@
   }
   function encodePath(p) {
     return p.split('/').map(encodeURIComponent).join('/');
+  }
+
+  /* ---------- 旧地址跳转（改名时自动登记到 redirects.yml） ---------- */
+  function parseFrontMatterDate(src) {
+    var m = /^date:\s*["']?(\d{4})-(\d{1,2})-(\d{1,2})/m.exec(src || '');
+    if (!m) return null;
+    return { y: m[1], m: ('0' + m[2]).slice(-2), d: ('0' + m[3]).slice(-2) };
+  }
+  function slugOf(name) {
+    return String(name).replace(/\.md$/i, '').replace(/^\d{4}-\d{2}-\d{2}-/, '');
+  }
+  function postUrlPath(name, src) {
+    var date = parseFrontMatterDate(src);
+    if (!date) return null;
+    return '/' + date.y + '/' + date.m + '/' + date.d + '/' + slugOf(name) + '/';
+  }
+  /* 向 redirects.yml 追加一条跳转记录；已存在则跳过。返回 'created' | 'exists' */
+  async function registerRedirect(fromPath, toPath) {
+    var resp = await api('/contents/' + encodePath(REDIR_PATH) + '?ref=' + BRANCH);
+    var existing = '';
+    var sha = null;
+    if (resp.status === 200) {
+      var data = await resp.json();
+      sha = data.sha;
+      existing = b64DecodeUtf8(data.content);
+    } else if (resp.status !== 404) {
+      throw new Error('读取跳转表失败（HTTP ' + resp.status + '）');
+    }
+    if (existing.indexOf('"' + fromPath + '"') !== -1) return 'exists';
+    var header = '# 旧地址 → 新地址 跳转表（由 /admin/ 的「改名」功能自动维护，也可以手动添加）\n' +
+      '# 每行一条：- { from: "/旧地址/", to: "/新地址/" }\n';
+    var line = '- { from: "' + fromPath + '", to: "' + toPath + '" }\n';
+    var next = existing.trim()
+      ? existing.replace(/\s+$/, '') + '\n' + line
+      : header + line;
+    var body = {
+      message: 'chore(redirect): ' + fromPath + ' → ' + toPath,
+      content: b64EncodeUtf8(next),
+      branch: BRANCH
+    };
+    if (sha) body.sha = sha;
+    var putResp = await api('/contents/' + encodePath(REDIR_PATH), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    var putData = await putResp.json().catch(function () { return {}; });
+    if (!putResp.ok) {
+      throw new Error('跳转表提交失败（HTTP ' + putResp.status + '）' + (putData.message ? '：' + putData.message : ''));
+    }
+    return 'created';
   }
 
   /* ---------- Markdown 实时预览（BlogMarkdown 引擎，与站点一致） ---------- */
@@ -712,10 +764,14 @@
   }
 
   /* ---------- 修改文章名称（重命名文件） ----------
-     两步分开做，任何一步失败都不会丢内容：
-       1) 先在 contents API 创建新文件（内容 = 编辑器当前内容，含未保存的修改）
+     分步执行，任何一步失败都不会丢内容：
+       1) 先在 contents API 创建新文件（内容 = 编辑器当前内容，含未保存的修改，
+          front-matter date 逐字保留，归档归类与排序不变）
        2) 再删除旧文件
-     注意：文件名变更会改变文章 URL（/年/月/日/文件名/），旧地址将 404。 */
+       3) 把 旧地址 → 新地址 追加登记到 blog/source/_data/redirects.yml
+          （构建时 scripts/redirects.js 生成跳转页，旧链接自动跳转）
+     归档页 /archives/、年/月页、分类/标签页与 local-search.xml
+     由随后触发的自动构建统一刷新为新地址。 */
   async function renameFile() {
     if (!current || current.isNew) {
       setStatus('请先打开一篇已存在的文章（新文章请直接修改文件名后保存）', 'fail');
@@ -724,7 +780,8 @@
     var oldName = current.name;
     var input = window.prompt(
       '输入新的文件名（.md 结尾）。\n' +
-      '注意：改名会改变文章 URL（/年/月/日/文件名/），旧链接将 404；\n' +
+      'front-matter 的 date 会原样保留（归档归类不变）；\n' +
+      '旧地址会自动登记为跳转到新地址；\n' +
       '编辑器中未保存的修改也会一并保存到新文件。',
       oldName);
     if (input === null) return;
@@ -734,7 +791,7 @@
       return;
     }
     if (newName === oldName) { setStatus('文件名未变化'); return; }
-    if (!window.confirm('确定将「' + oldName + '」改名为「' + newName + '」吗？\n旧链接将失效（404）。')) return;
+    if (!window.confirm('确定将「' + oldName + '」改名为「' + newName + '」吗？\n旧地址将自动跳转到新地址（通过跳转表实现）。')) return;
     var content = editor.value;
     if (!content.trim()) { setStatus('内容不能为空', 'fail'); return; }
 
@@ -779,13 +836,31 @@
       commitMsg.value = 'chore(post): 更新 ' + newName;
       filePathEl.textContent = DIR + '/' + newName;
 
+      /* 5) 登记旧地址 → 新地址 跳转（front-matter date 不变，归档页由部署构建自动刷新） */
+      var redirectNote = '';
+      var srcNow = editor.value; /* 编辑器内容（front-matter date 逐字保留） */
+      var oldPath = postUrlPath(oldName, srcNow);
+      var newPath = postUrlPath(newName, srcNow);
+      if (oldPath && newPath && oldPath !== newPath) {
+        try {
+          var r = await registerRedirect(oldPath, newPath);
+          redirectNote = (r === 'exists')
+            ? '；跳转表中已有该旧地址，未重复登记'
+            : '；旧地址 ' + oldPath + ' 将自动跳转到新地址';
+        } catch (rerr) {
+          redirectNote = '；旧地址跳转登记失败：' + ((rerr && rerr.message) || rerr) + '（旧地址将 404）';
+        }
+      } else {
+        redirectNote = '；未能从 front-matter 解析日期，跳过跳转登记';
+      }
+
       if (!deleteResp.ok) {
         var deleteData = await deleteResp.json().catch(function () { return {}; });
         setStatus('新文件已创建并可用，但旧文件删除失败（HTTP ' + deleteResp.status + '）' +
           (deleteData.message ? '：' + deleteData.message : '') +
-          '；请手动删除 ' + oldName, 'fail');
+          '；请手动删除 ' + oldName + redirectNote, 'fail');
       } else {
-        setStatus('已重命名：' + oldName + ' → ' + newName + '（约 1–2 分钟后自动构建上线）', 'ok');
+        setStatus('已重命名：' + oldName + ' → ' + newName + redirectNote + '（约 1–2 分钟后自动构建上线）', 'ok');
       }
       loadFiles();
     } catch (err) {
