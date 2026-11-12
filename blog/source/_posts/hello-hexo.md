@@ -12,6 +12,8 @@ tags:
 
 欢迎来到 **xiaohuage2026's Blog**！🎉
 
+本文修改于2026/11/12 15:34:06
+
 这是本站使用 [Hexo](https://hexo.io/) + [Fluid](https://github.com/fluid-dev/hexo-theme-fluid) 主题生成的第一篇文章。本文既是欢迎页，也是一份 **Markdown 渲染能力速览**：常用语法全部真实渲染，同时保留了一部分「目前不支持」的写法，方便日后逐步修复。
 
 <!-- more -->
