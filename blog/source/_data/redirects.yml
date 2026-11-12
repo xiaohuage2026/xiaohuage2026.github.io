@@ -4,4 +4,3 @@
 # 构建时 scripts/redirects.js 会为每条记录生成 from/index.html 跳转页
 # （meta refresh + canonical + JS location.replace），旧链接自动跳转到新地址。
 # from 末尾斜杠可写可不写。
-- { from: "/2026/11/09/hello-hexo/", to: "/2026/11/09/start/" }
