@@ -64,7 +64,7 @@ blog/
    --minify --format=iife --outfile=source/js/vendor/blog-preview.min.js`）。
    全程纯本地写作，复制 / 下载 `.md` 后即可走正常发布流程，不落库。
 
-2. **管理员界面**（`/admin/`，导航栏「管理」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 改名 / 删除
+2. **管理员界面**（`/admin/`，导航栏「管理员登录」）：通过 GitHub API 在浏览器内直接列出 / 读取 / 保存 / 新建 / 改名 / 删除
    `blog/source/_posts/` 下的文章。编辑框右侧为 **Markdown 实时预览**（与 `/editor/` 同款 BlogMarkdown 引擎：
    markdown-it + texmath + KaTeX + 自定义容器，150ms 去抖、暗色自适应）。
    **只有对仓库有写权限的 GitHub 账户（管理员 / 协作者）的令牌才能保存内容**；
@@ -86,6 +86,23 @@ blog/
    - 解锁后会向 GitHub 校验仓库 `permissions.push`，没有写权限的账户无法进入；
    - 保存即产生一次 commit；`.github/workflows/deploy.yml` 会在 `blog/**` 变更推到 main 后
      自动构建并同步到仓库根目录（GitHub Pages 发布源），约 1–2 分钟线上更新。
+
+## 安全加固（2026-11-12）
+
+与 `blog/` 之外的安全审计报告（sandbox/docs/安全审计报告.md）对应，已落地：
+
+- **预览/发布内容双重消毒**：
+  - `/editor/`、`/admin/` 预览：渲染引擎输出经 **DOMPurify** 白名单（html + MathML + SVG）过滤后才注入 innerHTML（`source/js/vendor/purify.min.js`）；
+  - 发布产物：`scripts/sanitize-posts.js`（`after_post_render` 过滤器 + sanitize-html 白名单），清除 `<script>`/事件属性/`javascript:` 链接，保留 KaTeX/highlight/任务列表/脚注/自定义容器等全部渲染产物；
+- **Fluid 内部 JS 已本地化**到 `source/js/vendor/internal/`（MIT，Fluid 1.9.9 原样拷贝 + 补丁）：
+  `local-search.js` 含三处安全补丁（关键词 escapeRegExp 防 ReDoS/语法崩溃、结果标题/URL escHtml 防存储型 XSS、节选内容先转义再高亮）；
+  `_config.fluid.yml` 的 `static_prefix.internal_js` 指向该目录——**修改主题内部脚本必须改这里的副本并同步验证**；
+- **跳转表校验**：`scripts/redirects.js` 强制单斜杠开头、反斜杠转义、控制字符拒绝、开头连续斜杠折叠（杜绝 `//evil.com` 开放重定向）；admin 登记跳转前做同样校验（`isLocalPath`）；
+- **admin 令牌保险箱**：设置密码时强制 ≥12 位、含字母+数字、弱密码片段/连号/重复字符拒绝；
+- **依赖**：移除未使用的 `mermaid`、`marked` 直接依赖；`overrides` 强制 `linkify-it@5.0.2`（markdown-it 传递依赖 ReDoS CVE）；`npm audit` 生产依赖从 12 个漏洞（1 critical）降至 7 个（0 critical，均为 hexo 构建期 deepmerge 等不可修复项）；
+- **`/editor/`、`/admin/` 页面**：增加 `referrer: no-referrer` 与 CSP meta（`object-src 'none'; base-uri 'none'`；admin 额外允许 `connect-src https://api.github.com`）；
+- **`/admin/` 文件列表 / 用户名**：`innerHTML` → `textContent`（防 git 可推送含 HTML 字符的文件名注入）。
+- `/editor/` 和 `/admin/` 支持 **Ctrl+↑** 打开 / 关闭 **LaTeX 速查悬浮窗**（Esc / 点击遮罩关闭）。
 
 ## 数学公式（KaTeX）
 

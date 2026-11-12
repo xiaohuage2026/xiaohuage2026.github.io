@@ -12,9 +12,13 @@
 function normalizePath(p) {
   var s = String(p == null ? '' : p).trim();
   if (!s) return '';
+  s = s.replace(/\\/g, '/');                 // 反斜杠统一按正斜杠解析（浏览器亦如此），消除 /\evil.com 类绕过
+  if (/[\x00-\x1f\x7f]/.test(s)) return '';   // 控制字符直接拒绝
   s = s.split('#')[0].split('?')[0];          // 去掉 hash / query
+  s = s.replace(/^\/+/, '/');                  // 折叠开头连续斜杠，消除 //evil.com 协议相对跳转
   if (s.charAt(0) !== '/') s = '/' + s;
   if (!s.endsWith('/')) s += '/';
+  if (!/^\/(?!\/)/.test(s)) return '';         // 双保险：必须单斜杠开头
   return s;
 }
 
@@ -54,6 +58,10 @@ hexo.extend.generator.register('redirects', function () {
     var from = normalizePath(item.from);
     var to = normalizePath(item.to);
     if (!from || !to || from === to) continue;
+    if (!/^\/(?!\/)/.test(to)) {               // 理论不可达（normalizePath 已保证）
+      hexo.log.warn('[redirects] 跳过非法跳转目标（必须为站内绝对路径）: ' + to);
+      continue;
+    }
     if (seen[from]) continue;                 // 同一个旧地址只生成一次
     seen[from] = true;
     out.push({ path: from.replace(/^\/+/, '') + 'index.html', data: stub(from, to) });
