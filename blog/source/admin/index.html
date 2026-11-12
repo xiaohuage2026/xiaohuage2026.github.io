@@ -407,30 +407,44 @@
     if (!date) return null;
     return '/' + date.y + '/' + date.m + '/' + date.d + '/' + slugOf(name) + '/';
   }
-  /* 向 redirects.yml 追加一条跳转记录；已存在则跳过。返回 'created' | 'exists' */
-  async function registerRedirect(fromPath, toPath) {
-    var resp = await api('/contents/' + encodePath(REDIR_PATH) + '?ref=' + BRANCH);
-    var existing = '';
-    var sha = null;
-    if (resp.status === 200) {
-      var data = await resp.json();
-      sha = data.sha;
-      existing = b64DecodeUtf8(data.content);
-    } else if (resp.status !== 404) {
-      throw new Error('读取跳转表失败（HTTP ' + resp.status + '）');
+  var REDIR_HEADER = '# 旧地址 → 新地址 跳转表（由 /admin/ 的「改名」功能自动维护，也可以手动添加）\n' +
+    '# 每行一条：- { from: "/旧地址/", to: "/新地址/" }\n';
+  function redirectLine(from, to) {
+    return '- { from: "' + from + '", to: "' + to + '" }';
+  }
+  /* 移除所有 from === fromPath 的条目，返回 { text, removed } */
+  function dropRedirectsFrom(text, fromPath) {
+    var lines = String(text || '').split('\n');
+    var kept = [], removed = 0;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].trim().indexOf('- { from: "' + fromPath + '"') === 0) { removed++; continue; }
+      kept.push(lines[i]);
     }
-    if (existing.indexOf('"' + fromPath + '"') !== -1) return 'exists';
-    var header = '# 旧地址 → 新地址 跳转表（由 /admin/ 的「改名」功能自动维护，也可以手动添加）\n' +
-      '# 每行一条：- { from: "/旧地址/", to: "/新地址/" }\n';
-    var line = '- { from: "' + fromPath + '", to: "' + toPath + '" }\n';
-    var next = existing.trim()
-      ? existing.replace(/\s+$/, '') + '\n' + line
-      : header + line;
-    var body = {
-      message: 'chore(redirect): ' + fromPath + ' → ' + toPath,
-      content: b64EncodeUtf8(next),
-      branch: BRANCH
-    };
+    return { text: kept.join('\n'), removed: removed };
+  }
+  /* 移除 from 或 to === path 的条目（文章被删除时清理死链） */
+  function dropRedirectsMatching(text, path) {
+    var lines = String(text || '').split('\n');
+    var kept = [], removed = 0;
+    var needle = '"' + path + '"';
+    for (var i = 0; i < lines.length; i++) {
+      var t = lines[i].trim();
+      if (t.indexOf('- { from:') === 0 && t.indexOf(needle) !== -1) { removed++; continue; }
+      kept.push(lines[i]);
+    }
+    return { text: kept.join('\n'), removed: removed };
+  }
+  async function fetchRedirects() {
+    var resp = await api('/contents/' + encodePath(REDIR_PATH) + '?ref=' + BRANCH);
+    if (resp.status === 404) return { text: '', sha: null, exists: false };
+    if (!resp.ok) throw new Error('读取跳转表失败（HTTP ' + resp.status + '）');
+    var data = await resp.json();
+    return { text: b64DecodeUtf8(data.content), sha: data.sha, exists: true };
+  }
+  async function putRedirects(text, sha, message) {
+    text = String(text || '');
+    if (text && !text.endsWith('\n')) text += '\n';
+    var body = { message: message, content: b64EncodeUtf8(text), branch: BRANCH };
     if (sha) body.sha = sha;
     var putResp = await api('/contents/' + encodePath(REDIR_PATH), {
       method: 'PUT',
@@ -441,7 +455,47 @@
     if (!putResp.ok) {
       throw new Error('跳转表提交失败（HTTP ' + putResp.status + '）' + (putData.message ? '：' + putData.message : ''));
     }
+  }
+  /* 向 redirects.yml 追加一条跳转记录：
+     - 先清除互逆条目（toPath → fromPath，改名又改回来时避免跳转环）
+     - 已有 from === fromPath 则不重复添加
+     返回 'created' | 'exists' */
+  async function registerRedirect(fromPath, toPath) {
+    var cur = await fetchRedirects();
+    var text = cur.text;
+    var changed = false;
+    var rev = dropRedirectsFrom(text, toPath);
+    if (rev.removed) { text = rev.text; changed = true; }
+    if (text.indexOf('from: "' + fromPath + '"') === -1) {
+      var line = redirectLine(fromPath, toPath);
+      text = text.trim()
+        ? text.replace(/\s+$/, '') + '\n' + line + '\n'
+        : REDIR_HEADER + line + '\n';
+      changed = true;
+    }
+    if (!changed) return 'exists';
+    await putRedirects(text, cur.sha, 'chore(redirect): ' + fromPath + ' → ' + toPath);
     return 'created';
+  }
+  /* 移除 from === path 的条目（保存 / 改名 / 新建的文章重新占用该地址时调用） */
+  async function clearRedirectForPath(path) {
+    var cur = await fetchRedirects();
+    if (!cur.exists) return false;
+    var res = dropRedirectsFrom(cur.text, path);
+    if (!res.removed) return false;
+    var text = res.text.trim() ? res.text : REDIR_HEADER;
+    await putRedirects(text, cur.sha, 'chore(redirect): 清理 ' + path + ' 跳转（文章已占用该地址）');
+    return true;
+  }
+  /* 移除 from/to === path 的条目（文章被删除时清理死链）。返回移除条数 */
+  async function clearRedirectsForDeletedPath(path) {
+    var cur = await fetchRedirects();
+    if (!cur.exists) return 0;
+    var res = dropRedirectsMatching(cur.text, path);
+    if (!res.removed) return 0;
+    var text = res.text.trim() ? res.text : REDIR_HEADER;
+    await putRedirects(text, cur.sha, 'chore(redirect): 清理指向/来自 ' + path + ' 的跳转（文章已删除）');
+    return res.removed;
   }
 
   /* ---------- Markdown 实时预览（BlogMarkdown 引擎，与站点一致） ---------- */
@@ -753,7 +807,17 @@
       current.isNew = false;
       current.sha = data.content && data.content.sha;
       commitMsg.value = 'chore(post): 更新 ' + name;
-      setStatus('已提交到 ' + BRANCH + '（约 1–2 分钟后自动构建上线）', 'ok');
+      /* 若跳转表中有条目以本文章的地址作为旧地址，说明文章重新占用了该地址，清理之 */
+      var saveNote = '';
+      try {
+        var savedPath = postUrlPath(name, content);
+        if (savedPath && await clearRedirectForPath(savedPath)) {
+          saveNote = '；已清理占用该地址的旧跳转';
+        }
+      } catch (rerr) {
+        saveNote = '；跳转表清理失败：' + ((rerr && rerr.message) || rerr);
+      }
+      setStatus('已提交到 ' + BRANCH + '（约 1–2 分钟后自动构建上线）' + saveNote, 'ok');
       loadFiles();
     } catch (err) {
       setStatus(err.message || String(err), 'fail');
@@ -798,6 +862,21 @@
     btnRename.disabled = true;
     btnRename.textContent = '改名中…';
     try {
+      var srcNow = editor.value; /* 编辑器内容（front-matter date 逐字保留） */
+      var oldPath = postUrlPath(oldName, srcNow);
+      var newPath = postUrlPath(newName, srcNow);
+      var redirectNote = '';
+
+      /* 0) 新地址上若有遗留跳转（改名又占用旧名），先清理——
+            必须在创建新文件之前做，避免「新文章 vs 跳转页」共存于同一条路径 */
+      if (newPath) {
+        try {
+          if (await clearRedirectForPath(newPath)) redirectNote += '；已清理新地址上的旧跳转';
+        } catch (rerr) {
+          redirectNote += '；新地址跳转清理失败：' + ((rerr && rerr.message) || rerr);
+        }
+      }
+
       /* 1) 目标必须不存在 */
       var check = await api('/contents/' + encodePath(DIR + '/' + newName) + '?ref=' + BRANCH);
       if (check.status === 200) throw new Error('目标文件已存在：' + newName);
@@ -837,21 +916,17 @@
       filePathEl.textContent = DIR + '/' + newName;
 
       /* 5) 登记旧地址 → 新地址 跳转（front-matter date 不变，归档页由部署构建自动刷新） */
-      var redirectNote = '';
-      var srcNow = editor.value; /* 编辑器内容（front-matter date 逐字保留） */
-      var oldPath = postUrlPath(oldName, srcNow);
-      var newPath = postUrlPath(newName, srcNow);
       if (oldPath && newPath && oldPath !== newPath) {
         try {
           var r = await registerRedirect(oldPath, newPath);
-          redirectNote = (r === 'exists')
+          redirectNote += (r === 'exists')
             ? '；跳转表中已有该旧地址，未重复登记'
             : '；旧地址 ' + oldPath + ' 将自动跳转到新地址';
         } catch (rerr) {
-          redirectNote = '；旧地址跳转登记失败：' + ((rerr && rerr.message) || rerr) + '（旧地址将 404）';
+          redirectNote += '；旧地址跳转登记失败：' + ((rerr && rerr.message) || rerr) + '（旧地址将 404）';
         }
-      } else {
-        redirectNote = '；未能从 front-matter 解析日期，跳过跳转登记';
+      } else if (!(oldPath && newPath)) {
+        redirectNote += '；未能从 front-matter 解析日期，跳过跳转登记';
       }
 
       if (!deleteResp.ok) {
@@ -888,7 +963,18 @@
       if (!resp.ok) {
         throw new Error('删除失败（HTTP ' + resp.status + '）' + (data.message ? '：' + data.message : ''));
       }
-      setStatus('已删除 ' + current.name, 'ok');
+      /* 删除成功后，清理跳转表中指向/来自该文章地址的条目（死链） */
+      var deleteNote = '';
+      var deletedPath = postUrlPath(current.name, editor.value);
+      if (deletedPath) {
+        try {
+          var removedCount = await clearRedirectsForDeletedPath(deletedPath);
+          if (removedCount) deleteNote = '；已清理 ' + removedCount + ' 条相关跳转';
+        } catch (rerr) {
+          deleteNote = '；相关跳转清理失败：' + ((rerr && rerr.message) || rerr);
+        }
+      }
+      setStatus('已删除 ' + current.name + deleteNote, 'ok');
       current = null;
       editor.value = '';
       renderPreview();
