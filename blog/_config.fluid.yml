@@ -14,7 +14,7 @@ navbar:
     - { key: "home", link: "/", icon: "iconfont icon-home-fill" }
     - { key: "archive", link: "/archives/", icon: "iconfont icon-archive-fill" }
     - { key: "about", link: "/about/", icon: "iconfont icon-user-fill" }
-    - { key: "admin", link: "/admin/", name: "管理" }
+    - { key: "admin", link: "/admin/", name: "管理员登录" }
     - key: more
       name: 更多
       submenu:
@@ -130,6 +130,10 @@ custom_js:
 static_prefix:
   katex: /vendor/katex/
   mermaid: /vendor/mermaid/
+  # 内部 JS 与主题同目录拷贝后托管在本站 /js/vendor/internal/（MIT，Fluid 1.9.9）。
+  # 目的：local-search.js 含本仓库的安全补丁（escapeRegExp + escHtml），
+  # 若走主题原版或 CDN 则补丁不会生效。修改时请同步核对 source/js/vendor/internal/。
+  internal_js: /js/vendor/internal/
 
 # 友链页
 links:
