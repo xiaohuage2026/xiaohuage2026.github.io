@@ -188,6 +188,9 @@
     .btn-save:hover { background: #22863a; }
     .btn-delete { background: transparent; color: var(--danger); border: 1px solid var(--danger) !important; }
     .btn-delete:hover { background: var(--danger); color: #fff; }
+    .btn-rename { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    .btn-rename:hover { background: var(--accent); color: #fff; }
+    .btn-rename:disabled { opacity: .6; cursor: wait; }
     .empty-state {
       flex: 1; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center;
       color: var(--text-sec); font-size: 14px; text-align: center; line-height: 2;
@@ -287,6 +290,7 @@
       <div class="action-bar">
         <input type="text" id="commit-msg" placeholder="提交信息，例如：chore(post): 修改《你好，Hexo！》">
         <button class="btn-save" id="btn-save">保存并提交</button>
+        <button class="btn-rename" id="btn-rename" title="修改文章文件名（会改变文章 URL）">改名</button>
         <button class="btn-delete" id="btn-delete">删除</button>
       </div>
     </section>
@@ -340,6 +344,7 @@
   var commitMsg = document.getElementById('commit-msg');
   var btnSave = document.getElementById('btn-save');
   var btnDelete = document.getElementById('btn-delete');
+  var btnRename = document.getElementById('btn-rename');
   var btnNew = document.getElementById('btn-new');
   var btnRefresh = document.getElementById('btn-refresh');
   var who = document.getElementById('who');
@@ -706,6 +711,91 @@
     }
   }
 
+  /* ---------- 修改文章名称（重命名文件） ----------
+     两步分开做，任何一步失败都不会丢内容：
+       1) 先在 contents API 创建新文件（内容 = 编辑器当前内容，含未保存的修改）
+       2) 再删除旧文件
+     注意：文件名变更会改变文章 URL（/年/月/日/文件名/），旧地址将 404。 */
+  async function renameFile() {
+    if (!current || current.isNew) {
+      setStatus('请先打开一篇已存在的文章（新文章请直接修改文件名后保存）', 'fail');
+      return;
+    }
+    var oldName = current.name;
+    var input = window.prompt(
+      '输入新的文件名（.md 结尾）。\n' +
+      '注意：改名会改变文章 URL（/年/月/日/文件名/），旧链接将 404；\n' +
+      '编辑器中未保存的修改也会一并保存到新文件。',
+      oldName);
+    if (input === null) return;
+    var newName = String(input).trim();
+    if (!/^[^/\\]{1,200}\.md$/i.test(newName)) {
+      setStatus('文件名需为 .md 结尾，且不含路径分隔符', 'fail');
+      return;
+    }
+    if (newName === oldName) { setStatus('文件名未变化'); return; }
+    if (!window.confirm('确定将「' + oldName + '」改名为「' + newName + '」吗？\n旧链接将失效（404）。')) return;
+    var content = editor.value;
+    if (!content.trim()) { setStatus('内容不能为空', 'fail'); return; }
+
+    btnRename.disabled = true;
+    btnRename.textContent = '改名中…';
+    try {
+      /* 1) 目标必须不存在 */
+      var check = await api('/contents/' + encodePath(DIR + '/' + newName) + '?ref=' + BRANCH);
+      if (check.status === 200) throw new Error('目标文件已存在：' + newName);
+      if (check.status !== 404) throw new Error('检查目标文件失败（HTTP ' + check.status + '）');
+
+      /* 2) 创建新文件（写入当前编辑器内容） */
+      var createResp = await api('/contents/' + encodePath(DIR + '/' + newName), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'chore(post): 重命名 ' + oldName + ' → ' + newName,
+          content: b64EncodeUtf8(content),
+          branch: BRANCH
+        })
+      });
+      var createData = await createResp.json().catch(function () { return {}; });
+      if (!createResp.ok) {
+        throw new Error('创建新文件失败（HTTP ' + createResp.status + '）' + (createData.message ? '：' + createData.message : ''));
+      }
+      var newSha = createData.content && createData.content.sha;
+
+      /* 3) 删除旧文件 */
+      var deleteResp = await api('/contents/' + encodePath(DIR + '/' + oldName), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'chore(post): 删除旧文件 ' + oldName + '（已重命名为 ' + newName + '）',
+          sha: current.sha,
+          branch: BRANCH
+        })
+      });
+
+      /* 4) 更新本地状态 */
+      current.name = newName;
+      current.sha = newSha || current.sha;
+      commitMsg.value = 'chore(post): 更新 ' + newName;
+      filePathEl.textContent = DIR + '/' + newName;
+
+      if (!deleteResp.ok) {
+        var deleteData = await deleteResp.json().catch(function () { return {}; });
+        setStatus('新文件已创建并可用，但旧文件删除失败（HTTP ' + deleteResp.status + '）' +
+          (deleteData.message ? '：' + deleteData.message : '') +
+          '；请手动删除 ' + oldName, 'fail');
+      } else {
+        setStatus('已重命名：' + oldName + ' → ' + newName + '（约 1–2 分钟后自动构建上线）', 'ok');
+      }
+      loadFiles();
+    } catch (err) {
+      setStatus(err.message || String(err), 'fail');
+    } finally {
+      btnRename.disabled = false;
+      btnRename.textContent = '改名';
+    }
+  }
+
   async function deleteFile() {
     if (!current || current.isNew) { setStatus('请先选择已存在的文件', 'fail'); return; }
     if (!window.confirm('确定删除 ' + current.name + ' 吗？此操作会产生一次删除提交。')) return;
@@ -747,6 +837,7 @@
   btnNew.addEventListener('click', newFile);
   btnRefresh.addEventListener('click', loadFiles);
   btnSave.addEventListener('click', saveFile);
+  btnRename.addEventListener('click', renameFile);
   btnDelete.addEventListener('click', deleteFile);
 
   /* 快捷键：Ctrl/Cmd + S 保存 */
